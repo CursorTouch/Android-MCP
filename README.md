@@ -40,7 +40,7 @@
 
 - Android 10+
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
@@ -64,7 +64,7 @@
 
 3. **Connect to the MCP server**
 
-   Add the following JSON (replace `{{PATH}}` placeholders) to your client config:
+Add the following JSON (replace `{{PATH}}` placeholders) to your client config:
 
 ```json
    {
@@ -92,7 +92,7 @@ For Claude Desktop, save as `%APPDATA%/Claude/claude_desktop_config.json`.
 
 5. **Restart the Claude Desktop**
 
-   Open your Claude Desktop, “Android-MCP” should now appear as an integration.
+Open your Claude Desktop, “Android-MCP” should now appear as an integration.
 
 For troubleshooting tips (log locations, common ADB issues), see the [MCP docs](https://modelcontextprotocol.io/quickstart/server#android-mcp-integration-issues).
 
