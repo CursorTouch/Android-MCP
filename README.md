@@ -22,6 +22,8 @@
 
 **Android-MCP** is a lightweight, open-source bridge between AI agents and Android devices. Running as an MCP server, it lets large-language-model agents perform real-world tasks such as **app navigation, UI interaction and automated QA testing** without relying on traditional computer-vision pipelines or preprogramed scripts.
 
+<https://github.com/user-attachments/assets/cf9a5e4e-b69f-46d4-8487-0f61a7a86d67>
+
 ## ✨ Key Features
 
 - **Native Android Integration**  
