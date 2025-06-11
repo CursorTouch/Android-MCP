@@ -10,17 +10,17 @@ mcp=FastMCP(name="Android-MCP",instructions=instructions)
 mobile=Mobile(device='emulator-5554')
 device=mobile.get_device()
 
-@mcp.tool('State-Tool',description='Get the state of the device')
-def state_tool():
-    mobile_state=mobile.get_state()
-    return mobile_state.tree_state.to_string()
-
 @mcp.tool(name='Click-Tool',description='Click on a specific cordinate')
 def click_tool(x:int,y:int):
     device.click(x,y)
     return f'Clicked on ({x},{y})'
 
-@mcp.tool(name='Long-Click-Tool',description='Long Click on a specific cordinate')
+@mcp.tool('State-Tool',description='Get the state of the device')
+def state_tool():
+    mobile_state=mobile.get_state()
+    return mobile_state.tree_state.to_string()
+
+@mcp.tool(name='Long-Click-Tool',description='Long click on a specific cordinate')
 def long_click_tool(x:int,y:int,duration:int):
     device.long_click(x,y,duration=duration)
     return f'Long Clicked on ({x},{y})'
@@ -39,14 +39,14 @@ def type_tool(text:str,x:int,y:int,clear:bool=False):
 @mcp.tool(name='Drag-Tool',description='Drag from location and drop on another location')
 def drag_tool(x1:int,y1:int,x2:int,y2:int):
     device.drag(x1,y1,x2,y2)
-    return f'Dragged from ({x1},{y1}) to ({x2},{y2})'
+    return f'Dragged from ({x1},{y1}) and dropped on ({x2},{y2})'
 
 @mcp.tool(name='Press-Tool',description='Press on specific button on the device')
 def press_tool(button:str):
     device.press(button)
-    return f'Pressed "{button}"'
+    return f'Pressed the "{button}" button'
 
-@mcp.tool(name='Notification-Tool',description='Access the notification bar of the device')
+@mcp.tool(name='Notification-Tool',description='Access the notifications seen on the device')
 def notification_tool():
     device.open_notification()
     return f'Accessed notification bar'
