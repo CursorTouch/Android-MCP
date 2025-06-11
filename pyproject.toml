@@ -1,9 +1,12 @@
 [project]
 name = "android-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "Lightweight MCP Server for Android Operating System"
 readme = "README.md"
 requires-python = ">=3.13"
+license = { file = "LICENSE" }
+urls = { Homepage = "https://github.com/Jeomon/Android-MCP" }
+keywords = ["android", "mcp", "mobile", "automation"]
 dependencies = [
     "mcp>=1.9.3",
     "uiautomator2>=3.3.1",
