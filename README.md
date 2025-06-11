@@ -135,7 +135,7 @@ Made with ❤️ by [Jeomon George](https://github.com/Jeomon)
   title        = {Android-MCP},
   year         = {2025},
   publisher    = {GitHub},
-  howpublished = {\url{https://github.com/YourOrg/Android-MCP}},
+  howpublished = {\url{https://github.com/CursorTouch/Android-MCP}},
   note         = {Lightweight open-source bridge between LLM agents and Android},
 }
 ```
