@@ -4,7 +4,7 @@ from src.tree import Tree
 import uiautomator2 as u2
 
 class Mobile:
-    def __init__(self,device:str):
+    def __init__(self,device:str=None):
         self.device = u2.connect(device)
 
     def get_device(self):

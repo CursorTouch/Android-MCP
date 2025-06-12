@@ -1,13 +1,19 @@
 from mcp.server.fastmcp import FastMCP
 from src.mobile import Mobile
 from textwrap import dedent
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument('--emulator',action='store_true',help='Use the emulator')
+args = parser.parse_args()
 
 instructions=dedent('''
 Android MCP server provides tools to interact directly with the Android device, 
 thus enabling to operate the mobile device like an actual USER.''')
 
 mcp=FastMCP(name="Android-MCP",instructions=instructions)
-mobile=Mobile(device='emulator-5554')
+
+mobile=Mobile(device=None if not args.emulator else 'emulator-5554')
 device=mobile.get_device()
 
 @mcp.tool(name='Click-Tool',description='Click on a specific cordinate')

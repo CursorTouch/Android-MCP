@@ -77,7 +77,8 @@ Add the following JSON (replace `{{PATH}}` placeholders) to your client config:
            "--directory",
            "{{PATH_TO_SRC}}/Android-MCP",
            "run",
-           "main.py"
+           "main.py",
+           "--emulator" //By default emulator is used; remove it, to connect to actual device
          ]
        }
      }
