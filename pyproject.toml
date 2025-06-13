@@ -9,5 +9,6 @@ urls = { Homepage = "https://github.com/Jeomon/Android-MCP" }
 keywords = ["android", "mcp", "mobile", "automation"]
 dependencies = [
     "mcp>=1.9.3",
+    "pillow>=11.2.1",
     "uiautomator2>=3.3.1",
 ]

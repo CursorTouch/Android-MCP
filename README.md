@@ -24,19 +24,19 @@
 
 <https://github.com/user-attachments/assets/cf9a5e4e-b69f-46d4-8487-0f61a7a86d67>
 
-## ✨ Key Features
+## ✨ Features
 
 - **Native Android Integration**  
   Interact with UI elements via ADB and the Android Accessibility API: launch apps, tap, swipe, input text, and read view hierarchies.
 
-- **Bring Your Own LLM (Vision Optional)**  
-  Works with any language model—no fine-tuned CV model or OCR pipeline required.
+- **Bring Your Own LLM/VLM**  
+  Works with any language model, no fine-tuned CV model or OCR pipeline required.
 
 - **Rich Toolset for Mobile Automation**  
-  Pre-built tools for gestures, keystrokes, capture, device state.
+  Pre-built tools for gestures, keystrokes, capture, device state, shell commands execution.
 
 - **Real-Time Interaction**  
-  Typical latency between actions (e.g., two taps) ranges **2 – 5 s** depending on device specs and load.
+  Typical latency between actions (e.g., two taps) ranges **2-4s** depending on device specs and load.
 
 ### Supported Operating Systems
 
@@ -44,10 +44,11 @@
 
 ## Installation
 
-### Prerequisites
+### 📦 Prerequisites
 
-- **Python 3.10+**
-- **Android Studio**
+- Python 3.10+
+- UIautomator2
+- Android Emulator/ Android Device
 
 ### 🏁 Getting Started
 
@@ -61,41 +62,44 @@
 2. **Install dependencies**
 
 ```shell
-   uv pip install -r pyproject.toml
+   uv python install 3.10
+   uv sync
 ```
 
 3. **Connect to the MCP server**
 
-Add the following JSON (replace `{{PATH}}` placeholders) to your client config:
+1. Locate your Claude Desktop configuration file:
 
-```json
-   {
-     "mcpServers": {
-       "android-mcp": {
-         "command": "{{PATH_TO_UV}}",
-         "args": [
-           "--directory",
-           "{{PATH_TO_SRC}}/Android-MCP",
-           "run",
-           "main.py",
-           "--emulator" //By default emulator is used; remove it, to connect to actual device
-         ]
-       }
-     }
-   }
-```
+  - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+  - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
-For Claude Desktop, save as `%APPDATA%/Claude/claude_desktop_config.json`.
+2. Add the following JSON to your Claude Desktop config:
 
-4. **Enable ADB & authorize your device**
+  ```json
+    {
+      "mcpServers": {
+        "android-mcp": {
+          "command": "path/to/uv",
+          "args": [
+            "--directory",
+            "path/to/Android-MCP",
+            "run",
+            "main.py",
+            "--emulator"
+          ]
+        }
+      }
+    }
+  ```
+  Replace:
+  - `path/to/uv` with the actual path to your uv executable
+  - `path/to/Android-MCP` with the absolute path to where you have cloned this repo
 
-```shell
-   adb devices   # verify that your phone/tablet appears and is "authorized"
-```
+  NOTE: `--emulator` this is used to run in emulator, remove it to use actual device
 
-5. **Restart the Claude Desktop**
+3. **Restart the Claude Desktop**
 
-Open your Claude Desktop, “Android-MCP” should now appear as an integration.
+Open your Claude Desktop, “android-mcp” should now appear as an integration.
 
 For troubleshooting tips (log locations, common ADB issues), see the [MCP docs](https://modelcontextprotocol.io/quickstart/server#android-mcp-integration-issues).
 
@@ -115,6 +119,7 @@ Claude can access the following tools to interact with Windows:
 - `Wait-Tool`: Pause for a defined duration.
 - `State-Tool`: Combined snapshot of active apps and interactive UI elements.
 - `Notification-Tool`: To access the notifications seen on the device.
+- `Shell-Tool`: To execute shell commands on the android device.
 
 ## ⚠️ Caution
 

@@ -1,4 +1,4 @@
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP,Image
 from src.mobile import Mobile
 from textwrap import dedent
 from argparse import ArgumentParser
@@ -61,6 +61,10 @@ def notification_tool():
 def wait_tool(duration:int):
     device.sleep(duration)
     return f'Waited for {duration} seconds'
+
+@mcp.tool(name='Shell-Tool',description='Execute shell commands on the device')
+def shell_tool(command:str):
+    return device.shell(command)
 
 if __name__ == '__main__':
     mcp.run()
