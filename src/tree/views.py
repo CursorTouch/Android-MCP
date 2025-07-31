@@ -4,6 +4,17 @@ from dataclasses import dataclass
 class ElementNode:
     name: str
     coordinates: 'CenterCord'
+    bounding_box: 'BoundingBox'
+
+@dataclass
+class BoundingBox:
+    x1:int
+    y1:int
+    x2:int
+    y2:int
+
+    def to_string(self):
+        return f'[{self.x1},{self.y1}][{self.x2},{self.y2}]'
 
 @dataclass
 class TreeState:

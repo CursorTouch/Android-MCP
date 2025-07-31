@@ -1,7 +1,9 @@
 from mcp.server.fastmcp import FastMCP,Image
+from contextlib import asynccontextmanager
+from argparse import ArgumentParser
 from src.mobile import Mobile
 from textwrap import dedent
-from argparse import ArgumentParser
+import asyncio
 
 parser = ArgumentParser()
 parser.add_argument('--emulator',action='store_true',help='Use the emulator')
@@ -10,6 +12,12 @@ args = parser.parse_args()
 instructions=dedent('''
 Android MCP server provides tools to interact directly with the Android device, 
 thus enabling to operate the mobile device like an actual USER.''')
+
+@asynccontextmanager
+async def lifespan(app: FastMCP):
+    """Runs initialization code before the server starts and cleanup code after it shuts down."""
+    await asyncio.sleep(1) # Simulate startup latency
+    yield
 
 mcp=FastMCP(name="Android-MCP",instructions=instructions)
 
@@ -21,10 +29,10 @@ def click_tool(x:int,y:int):
     device.click(x,y)
     return f'Clicked on ({x},{y})'
 
-@mcp.tool('State-Tool',description='Get the state of the device')
-def state_tool():
-    mobile_state=mobile.get_state()
-    return mobile_state.tree_state.to_string()
+@mcp.tool('State-Tool',description='Get the state of the device. Optionally includes visual screenshot when use_vision=True.')
+def state_tool(use_vision:bool=False):
+    mobile_state=mobile.get_state(use_vision=use_vision)
+    return [mobile_state.tree_state.to_string()]+([Image(data=mobile_state.screenshot,format='PNG')] if use_vision else [])
 
 @mcp.tool(name='Long-Click-Tool',description='Long click on a specific cordinate')
 def long_click_tool(x:int,y:int,duration:int):
@@ -55,16 +63,12 @@ def press_tool(button:str):
 @mcp.tool(name='Notification-Tool',description='Access the notifications seen on the device')
 def notification_tool():
     device.open_notification()
-    return f'Accessed notification bar'
+    return 'Accessed notification bar'
 
 @mcp.tool(name='Wait-Tool',description='Wait for a specific amount of time')
 def wait_tool(duration:int):
     device.sleep(duration)
     return f'Waited for {duration} seconds'
-
-@mcp.tool(name='Shell-Tool',description='Execute shell commands on the device')
-def shell_tool(command:str):
-    return device.shell(command)
 
 if __name__ == '__main__':
     mcp.run()

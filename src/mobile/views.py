@@ -10,3 +10,4 @@ class App:
 @dataclass
 class MobileState:
     tree_state:TreeState
+    screenshot:bytes|None
