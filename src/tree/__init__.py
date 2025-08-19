@@ -42,7 +42,7 @@ class Tree:
     def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7) -> Image.Image:
         screenshot = self.mobile.get_screenshot(scale=scale)
         # Add padding
-        padding = 10
+        padding = 15
         width = screenshot.width + (2 * padding)
         height = screenshot.height + (2 * padding)
         padded_screenshot = Image.new("RGB", (width, height), color=(255, 255, 255))
@@ -59,15 +59,15 @@ class Tree:
             return "#{:06x}".format(random.randint(0, 0xFFFFFF))
 
         def draw_annotation(label, node: ElementNode):
-            left,top,right,bottom = node.bounding_box
+            bounding_box = node.bounding_box
             color = get_random_color()
 
             # Scale and pad the bounding box also clip the bounding box
             adjusted_box = (
-                int(left * scale) + padding,
-                int(top * scale) + padding,
-                int(right * scale) + padding,
-                int(bottom * scale) + padding
+                int(bounding_box.x1 * scale) + padding,
+                int(bounding_box.y1 * scale) + padding,
+                int(bounding_box.x2 * scale) + padding,
+                int(bounding_box.y2 * scale) + padding
             )
             # Draw bounding box
             draw.rectangle(adjusted_box, outline=color, width=2)

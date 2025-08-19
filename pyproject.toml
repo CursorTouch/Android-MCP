@@ -8,6 +8,7 @@ license = { file = "LICENSE" }
 urls = { Homepage = "https://github.com/Jeomon/Android-MCP" }
 keywords = ["android", "mcp", "mobile", "automation"]
 dependencies = [
+    "ipykernel>=6.30.1",
     "mcp>=1.9.3",
     "pillow>=11.2.1",
     "uiautomator2>=3.3.1",
