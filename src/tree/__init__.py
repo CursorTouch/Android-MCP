@@ -1,12 +1,10 @@
 from src.tree.views import TreeState, ElementNode, CenterCord, BoundingBox
 from src.tree.utils import extract_cordinates,get_center_cordinates
-from concurrent.futures import ThreadPoolExecutor
 from src.tree.config import INTERACTIVE_CLASSES
 from PIL import Image, ImageFont, ImageDraw
 from xml.etree.ElementTree import Element
 from xml.etree import ElementTree
 from typing import TYPE_CHECKING
-from time import sleep
 import random
 
 if TYPE_CHECKING:
@@ -43,7 +41,6 @@ class Tree:
     
     def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7) -> Image.Image:
         screenshot = self.mobile.get_screenshot(scale=scale)
-        sleep(0.1)
         # Add padding
         padding = 10
         width = screenshot.width + (2 * padding)
@@ -89,8 +86,9 @@ class Tree:
             # Draw label background and text
             draw.rectangle([(label_x1, label_y1), (label_x2, label_y2)], fill=color)
             draw.text((label_x1 + 2, label_y1 + 2), str(label), fill=(255, 255, 255), font=font)
+        
+        # Draw annotations sequentially for better performance and thread safety
+        for i, node in enumerate(nodes):
+            draw_annotation(i, node)
 
-        with ThreadPoolExecutor() as executor:
-        # Draw annotations in parallel
-            executor.map(draw_annotation, range(len(nodes)), nodes)
         return padded_screenshot
