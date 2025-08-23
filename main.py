@@ -35,8 +35,8 @@ def state_tool(use_vision:bool=False):
     return [mobile_state.tree_state.to_string()]+([Image(data=mobile_state.screenshot,format='PNG')] if use_vision else [])
 
 @mcp.tool(name='Long-Click-Tool',description='Long click on a specific cordinate')
-def long_click_tool(x:int,y:int,duration:int):
-    device.long_click(x,y,duration=duration)
+def long_click_tool(x:int,y:int):
+    device.long_click(x,y)
     return f'Long Clicked on ({x},{y})'
 
 @mcp.tool(name='Swipe-Tool',description='Swipe on a specific cordinate')
