@@ -57,7 +57,6 @@ class Tree:
             except Exception as e:
                 print(f"Unexpected error processing element: {e}, skipping element")
                 continue
-            
         return interactive_elements
     
 
