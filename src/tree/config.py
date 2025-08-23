@@ -8,3 +8,4 @@ INTERACTIVE_CLASSES = [
         "android.widget.Spinner",
         "android.widget.SeekBar"
     ]
+
