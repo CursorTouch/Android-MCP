@@ -16,6 +16,7 @@ class Tree:
 
     def get_element_tree(self)->'Element':
         tree_string = self.mobile.device.dump_hierarchy()
+        print(tree_string)
         return ElementTree.fromstring(tree_string)
     
     def get_state(self)->TreeState:
@@ -27,10 +28,9 @@ class Tree:
         element_tree = self.get_element_tree()
         nodes=element_tree.findall('.//node[@visible-to-user="true"][@enabled="true"]')
         for node in nodes:
-            attributes=node.attrib
-            if attributes.get('text') or attributes.get('content-desc') or attributes.get('class') in INTERACTIVE_CLASSES:
-                x1,y1,x2,y2 = extract_cordinates(attributes.get('bounds'))
-                name=attributes.get('text') or attributes.get('content-desc') or None
+            if self.is_interactive(node):
+                x1,y1,x2,y2 = extract_cordinates(node)
+                name=self.get_element_name(node)
                 if not name:
                     continue
                 x_center,y_center = get_center_cordinates((x1,y1,x2,y2))
@@ -40,7 +40,17 @@ class Tree:
                     'bounding_box':BoundingBox(x1=x1,y1=y1,x2=x2,y2=y2)
                 }))
         return interactive_elements
-    
+
+    def get_element_name(self, node) -> str:
+        name = "".join([n.get('text') or n.get('content-desc') for n in node if n.get('class')=="android.widget.TextView"]) or node.get('content-desc') or node.get('text')
+        return name
+
+    def is_interactive(self, node) -> bool:
+        attributes = node.attrib
+        return (attributes.get('focusable') == "true" or 
+        attributes.get('clickable') == "true" or
+        attributes.get('class') in INTERACTIVE_CLASSES)
+
     def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7) -> Image.Image:
         screenshot = self.mobile.get_screenshot(scale=scale)
         # Add padding
