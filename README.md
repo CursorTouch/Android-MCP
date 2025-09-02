@@ -134,7 +134,9 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 Contributions are welcome! Please read [CONTRIBUTING](CONTRIBUTING) for dev setup and PR guidelines.
 
-Made with ❤️ by [CursorTouch](https://github.com/cursortouch) developers: [JeomonGeorge](https://github.com/jeomon), [Muhammad Yaseen](https://github.com/mhmdyaseen)
+Made with ❤️ by [CursorTouch](https://github.com/cursortouch), 
+
+developers: [JeomonGeorge](https://github.com/jeomon), [Muhammad Yaseen](https://github.com/mhmdyaseen)
 
 ## Citation
 
