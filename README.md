@@ -136,7 +136,7 @@ Contributions are welcome! Please read [CONTRIBUTING](CONTRIBUTING) for dev setu
 
 Made with ❤️ by [CursorTouch](https://github.com/cursortouch), 
 
-developers: [JeomonGeorge](https://github.com/jeomon), [Muhammad Yaseen](https://github.com/mhmdyaseen)
+developers: [Jeomon George](https://github.com/jeomon), [Muhammad Yaseen](https://github.com/mhmdyaseen)
 
 ## Citation
 
