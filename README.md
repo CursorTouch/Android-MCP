@@ -20,7 +20,7 @@
 
 <br>
 
-**Android-MCP** is a lightweight, open-source bridge between AI agents and Android devices. Running as an MCP server, it lets large-language-model agents perform real-world tasks such as **app navigation, UI interaction and automated QA testing** without relying on traditional computer-vision pipelines or preprogramed scripts.
+**Android-MCP** is a lightweight, open-source tool that bridge between AI agents and Android devices. Running as an MCP server, it lets LLM agents perform real-world tasks such as **app navigation, UI interaction and automated QA testing** without relying on traditional computer-vision pipelines or preprogramed scripts.
 
 <https://github.com/user-attachments/assets/cf9a5e4e-b69f-46d4-8487-0f61a7a86d67>
 
@@ -48,7 +48,8 @@
 
 - Python 3.10+
 - UIautomator2
-- Android Emulator/ Android Device
+- Android 10+ (Emulator/ Android Device)
+- A computer to run MCP server
 
 ### 🏁 Getting Started
 
@@ -99,13 +100,13 @@
 
 3. **Restart the Claude Desktop**
 
-Open your Claude Desktop, “android-mcp” should now appear as an integration.
+Restart your Claude Desktop. You should see "android-mcp" listed as an available integration. That's it, now you're ready to start controlling your Android device with natural language.
 
 For troubleshooting tips (log locations, common ADB issues), see the [MCP docs](https://modelcontextprotocol.io/quickstart/server#android-mcp-integration-issues).
 
 ---
 
-## 🛠️ MCP Tools
+## 🛠️ Available Tools
 
 Claude can access the following tools to interact with Windows:
 
@@ -133,13 +134,13 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 Contributions are welcome! Please read [CONTRIBUTING](CONTRIBUTING) for dev setup and PR guidelines.
 
-Made with ❤️ by [Jeomon George](https://github.com/Jeomon)
+Made with ❤️ by [CursorTouch](https://github.com/cursortouch) developers: [JeomonGeorge](https://github.com/jeomon), [Muhammad Yaseen](https://github.com/mhmdyaseen)
 
 ## Citation
 
 ```bibtex
 @misc{
-  author       = {Jeomon George},
+  author       = {cursortouch},
   title        = {Android-MCP},
   year         = {2025},
   publisher    = {GitHub},
