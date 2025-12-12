@@ -41,7 +41,6 @@ class Tree:
                 interactive_elements.append(ElementNode(**{
                     'name':name,
                     'class_name':node.get('class'),
-                    'drawing_order': int(node.get('drawing-order', 0)),
                     'coordinates':CenterCord(x=x_center,y=y_center),
                     'bounding_box':BoundingBox(x1=x1,y1=y1,x2=x2,y2=y2)
                 }))

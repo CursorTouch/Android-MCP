@@ -53,50 +53,59 @@
 
 ### 🏁 Getting Started
 
-1. **Clone the repository**
+You can run the Android MCP server using **UVX** (recommended) or **UV** (for local development).
 
-```shell
+#### Option 1: UVX (Recommended)
+
+No need to install dependencies manually. Just configure Claude Desktop:
+
+1. **Locate your config file**
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+2. **Add the configuration**
+   ```json
+   {
+     "mcpServers": {
+       "android-mcp": {
+         "command": "uvx",
+         "args": [
+           "android-mcp",
+           "--emulator"
+         ]
+       }
+     }
+   }
+   ```
+   > **Note:** Remove `--emulator` if providing a physical device.
+
+#### Option 2: UV Mode (Local Development)
+
+1. **Clone and Install**
+   ```shell
    git clone https://github.com/CursorTouch/Android-MCP.git
    cd Android-MCP
-```
-
-2. **Install dependencies**
-
-```shell
-   uv python install 3.10
    uv sync
-```
+   ```
 
-3. **Connect to the MCP server**
-
-1. Locate your Claude Desktop configuration file:
-
-  - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-  - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-2. Add the following JSON to your Claude Desktop config:
-
-  ```json
-    {
-      "mcpServers": {
-        "android-mcp": {
-          "command": "path/to/uv",
-          "args": [
-            "--directory",
-            "path/to/Android-MCP",
-            "run",
-            "main.py",
-            "--emulator"
-          ]
-        }
-      }
-    }
-  ```
-  Replace:
-  - `path/to/uv` with the actual path to your uv executable
-  - `path/to/Android-MCP` with the absolute path to where you have cloned this repo
-
-  NOTE: `--emulator` this is used to run in emulator, remove it to use actual device
+2. **Configure Claude Desktop**
+   ```json
+   {
+     "mcpServers": {
+       "android-mcp": {
+         "command": "uv",
+         "args": [
+           "--directory",
+           "</PATH/TO/Android-MCP>",
+           "run",
+           "android-mcp",
+           "--emulator"
+         ]
+       }
+     }
+   }
+   ```
+   > **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory.
 
 3. **Restart the Claude Desktop**
 

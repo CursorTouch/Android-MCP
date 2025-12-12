@@ -5,7 +5,7 @@ description = "Lightweight MCP Server for Android Operating System"
 readme = "README.md"
 requires-python = ">=3.13"
 license = { file = "LICENSE" }
-urls = { Homepage = "https://github.com/Jeomon/Android-MCP" }
+urls = { Homepage = "https://github.com/CursorTouch/Android-MCP" }
 keywords = ["android", "mcp", "mobile", "automation"]
 dependencies = [
     "fastmcp>=2.14.0",
