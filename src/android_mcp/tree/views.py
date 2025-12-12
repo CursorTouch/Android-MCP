@@ -4,6 +4,8 @@ from tabulate import tabulate
 @dataclass
 class ElementNode:
     name: str
+    class_name: str
+    drawing_order: int
     coordinates: 'CenterCord'
     bounding_box: 'BoundingBox'
 
@@ -22,8 +24,8 @@ class TreeState:
     interactive_elements:list[ElementNode]
 
     def to_string(self):
-        data = [[index, node.name, node.coordinates.to_string()] for index, node in enumerate(self.interactive_elements)]
-        return tabulate(data, headers=["Label", "Name", "Coordinates"], tablefmt="grid")
+        data = [[index, node.name, node.class_name, node.drawing_order, node.coordinates.to_string()] for index, node in enumerate(self.interactive_elements)]
+        return tabulate(data, headers=["Label", "Name", "Class", "DrawOrder", "Coordinates"], tablefmt="plain")
     
 @dataclass
 class CenterCord:

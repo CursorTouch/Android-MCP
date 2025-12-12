@@ -6,6 +6,6 @@ INTERACTIVE_CLASSES = [
         "android.widget.Switch",
         "android.widget.RadioButton",
         "android.widget.Spinner",
-        "android.widget.SeekBar"
+        "android.widget.SeekBar",
     ]
 

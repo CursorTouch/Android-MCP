@@ -2,7 +2,7 @@ from fastmcp import FastMCP
 from fastmcp.utilities.types import Image
 from contextlib import asynccontextmanager
 from argparse import ArgumentParser
-from android_mcp.mobile import Mobile
+from android_mcp.mobile.service import Mobile
 from textwrap import dedent
 import asyncio
 
@@ -32,7 +32,7 @@ def click_tool(x:int,y:int):
 
 @mcp.tool('State-Tool',description='Get the state of the device. Optionally includes visual screenshot when use_vision=True.')
 def state_tool(use_vision:bool=False):
-    mobile_state=mobile.get_state(use_vision=use_vision)
+    mobile_state=mobile.get_state(use_vision=use_vision,as_bytes=True)
     return [mobile_state.tree_state.to_string()]+([Image(data=mobile_state.screenshot,format='PNG')] if use_vision else [])
 
 @mcp.tool(name='Long-Click-Tool',description='Long click on a specific cordinate')
