@@ -1,14 +1,18 @@
-from src.tree.views import TreeState, ElementNode, CenterCord, BoundingBox
-from src.tree.utils import extract_cordinates,get_center_cordinates
-from src.tree.config import INTERACTIVE_CLASSES
+from android_mcp.tree.views import TreeState, ElementNode, CenterCord, BoundingBox
+from android_mcp.tree.utils import extract_cordinates,get_center_cordinates
+from android_mcp.tree.config import INTERACTIVE_CLASSES
 from PIL import Image, ImageFont, ImageDraw
 from xml.etree.ElementTree import Element
 from xml.etree import ElementTree
 from typing import TYPE_CHECKING
 import random
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from src.mobile import Mobile
+    from android_mcp.mobile import Mobile
 
 class Tree:
     def __init__(self,mobile:'Mobile'):
@@ -16,7 +20,7 @@ class Tree:
 
     def get_element_tree(self)->'Element':
         tree_string = self.mobile.device.dump_hierarchy()
-        print(tree_string)
+        logger.debug(tree_string)
         return ElementTree.fromstring(tree_string)
     
     def get_state(self)->TreeState:

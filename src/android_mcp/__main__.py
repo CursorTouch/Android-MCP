@@ -1,7 +1,8 @@
-from mcp.server.fastmcp import FastMCP,Image
+from fastmcp import FastMCP
+from fastmcp.utilities.types import Image
 from contextlib import asynccontextmanager
 from argparse import ArgumentParser
-from src.mobile import Mobile
+from android_mcp.mobile import Mobile
 from textwrap import dedent
 import asyncio
 
@@ -70,5 +71,8 @@ def wait_tool(duration:int):
     device.sleep(duration)
     return f'Waited for {duration} seconds'
 
-if __name__ == '__main__':
+def main():
     mcp.run()
+
+if __name__ == '__main__':
+    main()

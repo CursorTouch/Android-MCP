@@ -1,5 +1,5 @@
-from src.mobile.views import MobileState
-from src.tree import Tree
+from android_mcp.mobile.views import MobileState
+from android_mcp.tree import Tree
 import uiautomator2 as u2
 from io import BytesIO
 from PIL import Image
@@ -17,14 +17,19 @@ class Mobile:
     def get_device(self):
         return self.device
 
-    def get_state(self,use_vision=False):
+    def get_state(self,use_vision=False,as_bytes:bool=False,as_base64:bool=False):
         try:
             tree = Tree(self)
             tree_state = tree.get_state()
             if use_vision:
                 nodes=tree_state.interactive_elements
                 annotated_screenshot=tree.annotated_screenshot(nodes=nodes,scale=1.0)
-                screenshot=self.screenshot_in_bytes(annotated_screenshot)
+                if as_base64:
+                    screenshot=self.as_base64(annotated_screenshot)
+                elif as_bytes:
+                    screenshot=self.screenshot_in_bytes(annotated_screenshot)
+                else:
+                    screenshot=annotated_screenshot
             else:
                 screenshot=None
             return MobileState(tree_state=tree_state,screenshot=screenshot)
@@ -54,5 +59,18 @@ class Mobile:
             return bytes
         except Exception as e:
             raise RuntimeError(f"Failed to convert screenshot to bytes: {e}")
+
+    def as_base64(self,screenshot:Image.Image)->str:
+        try:
+            if screenshot is None:
+                raise ValueError("Screenshot is None")
+            io=BytesIO()
+            screenshot.save(io,format='PNG')
+            bytes=io.getvalue()
+            if len(bytes) == 0:
+                raise ValueError("Screenshot conversion resulted in empty bytes.")
+            return base64.b64encode(bytes).decode('utf-8')
+        except Exception as e:
+            raise RuntimeError(f"Failed to convert screenshot to base64: {e}")
 
     

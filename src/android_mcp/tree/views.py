@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from tabulate import tabulate
 
 @dataclass
 class ElementNode:
@@ -21,7 +22,8 @@ class TreeState:
     interactive_elements:list[ElementNode]
 
     def to_string(self):
-        return '\n'.join([f'Label: {index} Name: {node.name} Coordinates: {node.coordinates.to_string()}' for index,node in enumerate(self.interactive_elements)])
+        data = [[index, node.name, node.coordinates.to_string()] for index, node in enumerate(self.interactive_elements)]
+        return tabulate(data, headers=["Label", "Name", "Coordinates"], tablefmt="grid")
     
 @dataclass
 class CenterCord:
