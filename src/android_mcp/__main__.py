@@ -7,7 +7,7 @@ from textwrap import dedent
 import asyncio
 
 parser = ArgumentParser()
-parser.add_argument('--emulator',action='store_true',help='Use the emulator')
+parser.add_argument('--device',type=str,help='Device serial number (default: emulator-5554)')
 args = parser.parse_args()
 
 instructions=dedent('''
@@ -22,7 +22,7 @@ async def lifespan(app: FastMCP):
 
 mcp=FastMCP(name="Android-MCP",instructions=instructions)
 
-mobile=Mobile(device=None if not args.emulator else 'emulator-5554')
+mobile=Mobile(device=args.device if args.device else 'emulator-5554')
 device=mobile.get_device()
 
 @mcp.tool(name='Click-Tool',description='Click on a specific cordinate')

@@ -47,9 +47,24 @@
 ### 📦 Prerequisites
 
 - Python 3.10+
-- UIautomator2
+- ADB (Android Debug Bridge)
 - Android 10+ (Emulator/ Android Device)
-- A computer to run MCP server
+
+### 📲 Testing ADB Connection
+
+Before running the server, ensure your Android device is connected and recognized by ADB:
+
+1. Connect your Android device via USB or ensure your emulator is running.
+2. Open a terminal and run:
+   ```shell
+   adb devices
+   ```
+3. You should see your device listed:
+   ```
+   List of devices attached
+   emulator-5554   device
+   ```
+   If the list is empty or shows "unauthorized", check your USB debugging settings on the device.
 
 ### 🏁 Getting Started
 
@@ -70,14 +85,13 @@ No need to install dependencies manually. Just configure Claude Desktop:
        "android-mcp": {
          "command": "uvx",
          "args": [
-           "android-mcp",
-           "--emulator"
+           "android-mcp"
          ]
        }
      }
    }
    ```
-   > **Note:** Remove `--emulator` if providing a physical device.
+   > **Note:** By default, it connects to `emulator-5554`. To connect to a specific device, add `"--device", "<YOUR_DEVICE_serial>"` to the args list.
 
 #### Option 2: UV Mode (Local Development)
 
@@ -98,14 +112,13 @@ No need to install dependencies manually. Just configure Claude Desktop:
            "--directory",
            "</PATH/TO/Android-MCP>",
            "run",
-           "android-mcp",
-           "--emulator"
+           "android-mcp"
          ]
        }
      }
    }
    ```
-   > **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory.
+   > **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory. Add `"--device", "<YOUR_DEVICE_serial>"` to args to target a specific device.
 
 3. **Restart the Claude Desktop**
 
