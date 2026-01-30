@@ -144,6 +144,10 @@ Claude can access the following tools to interact with Windows:
 - `Notification-Tool`: To access the notifications seen on the device.
 - `Shell-Tool`: To execute shell commands on the android device.
 
+## ⚙️ Environment Variables
+
+- `SCREENSHOT_QUANTIZED`: Set to `true` to quantize the screenshot to reduce input tokens.
+
 ## ⚠️ Caution
 
 Android-MCP can execute arbitrary UI actions on your mobile device. Use it in controlled environments (emulators, test devices) when running untrusted prompts or agents.
