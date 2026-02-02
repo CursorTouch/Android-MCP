@@ -4,6 +4,7 @@ import uiautomator2 as u2
 from io import BytesIO
 from PIL import Image
 import base64
+import os
 
 class Mobile:
     def __init__(self,device:str=None):
@@ -25,6 +26,8 @@ class Mobile:
             if use_vision:
                 nodes=tree_state.interactive_elements
                 annotated_screenshot=tree.annotated_screenshot(nodes=nodes,scale=1.0)
+                if os.getenv("SCREENSHOT_QUANTIZED") in ["1", "yes", "true", True]:
+                    annotated_screenshot = self.quantized_screenshot(annotated_screenshot)
                 if as_base64:
                     screenshot=self.as_base64(annotated_screenshot)
                 elif as_bytes:
@@ -47,7 +50,16 @@ class Mobile:
             return screenshot
         except Exception as e:
             raise RuntimeError(f"Failed to get screenshot: {e}")
-    
+
+    def quantized_screenshot(self, screenshot: Image.Image) -> Image.Image:
+        if screenshot.mode == 'RGBA':
+            screenshot = screenshot.convert('RGB')
+        screenshot = screenshot.convert('P', palette=Image.Palette.ADAPTIVE, colors=256)
+
+        io = BytesIO()
+        screenshot.save(io, format='PNG', optimize=True)
+        return Image.open(io)
+
     def screenshot_in_bytes(self,screenshot:Image.Image)->bytes:
         try:
             if screenshot is None:
