@@ -26,6 +26,14 @@
   },
   "tools": [
     {
+      "name": "ListDevices",
+      "description": "List available ADB devices and their connection state."
+    },
+    {
+      "name": "ConnectDevice",
+      "description": "Connect to an ADB device by serial number."
+    },
+    {
       "name": "Click",
       "description": "Click on a specific cordinate (x, y)."
     },
