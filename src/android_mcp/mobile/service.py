@@ -3,18 +3,45 @@ from android_mcp.tree.service import Tree
 import uiautomator2 as u2
 from io import BytesIO
 from PIL import Image
+import subprocess
 import base64
 import os
 
 class Mobile:
-    def __init__(self,device:str=None):
+    def __init__(self):
+        self.device = None
+
+    @staticmethod
+    def list_devices():
         try:
-            self.device = u2.connect(device)
+            result = subprocess.run(
+                ['adb', 'devices'], capture_output=True, text=True, timeout=10
+            )
+            devices = []
+            for line in result.stdout.strip().splitlines()[1:]:
+                parts = line.split('\t')
+                if len(parts) == 2:
+                    devices.append((parts[0], parts[1]))
+            return devices
+        except FileNotFoundError:
+            raise RuntimeError("adb not found. Ensure ADB is installed and on PATH.")
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("adb devices timed out.")
+
+    def connect(self,serial:str):
+        try:
+            self.device = u2.connect(serial)
             self.device.info
         except u2.ConnectError as e:
-            raise ConnectionError(f"Failed to connect to device {device}: {e}")
+            self.device = None
+            raise ConnectionError(f"Failed to connect to device {serial}: {e}")
         except Exception as e:
-            raise RuntimeError(f"Unexpected error connecting to device {device}: {e}")
+            self.device = None
+            raise RuntimeError(f"Unexpected error connecting to device {serial}: {e}")
+
+    @property
+    def is_connected(self):
+        return self.device is not None
 
     def get_device(self):
         return self.device
