@@ -10,7 +10,7 @@ import sys
 
 parser = ArgumentParser()
 parser.add_argument('--device',type=str,help='Device serial number (default: auto-detect)')
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 
 instructions=dedent('''
 Android MCP server provides tools to interact directly with the Android device, 
@@ -26,26 +26,30 @@ mcp=FastMCP(name="Android-MCP",instructions=instructions)
 
 mobile=Mobile()
 
-# Auto-connect: use --device if provided, otherwise auto-detect a single device
-target=args.device
-if not target:
-    try:
-        devices=Mobile.list_devices()
-        online=[(s,st) for s,st in devices if st == 'device']
-        if len(online) == 1:
-            target=online[0][0]
-    except Exception:
-        pass
-
-if target:
-    try:
-        mobile.connect(target)
-    except Exception as e:
-        print(f"Warning: could not connect to {target}: {e}",file=sys.stderr)
+_auto_connect_attempted = False
 
 not_connected_msg="No device connected. Use the ListDevices tool to see available devices, then ConnectDevice to connect."
 
 def require_device():
+    global _auto_connect_attempted
+    if not mobile.is_connected and not _auto_connect_attempted:
+        _auto_connect_attempted = True
+        target = args.device
+        if not target:
+            try:
+                devices = Mobile.list_devices()
+                online = [(s, st) for s, st in devices if st == 'device']
+                if len(online) == 1:
+                    target = online[0][0]
+            except Exception:
+                pass
+        
+        if target:
+            try:
+                mobile.connect(target)
+            except Exception as e:
+                print(f"Warning: could not connect to {target}: {e}", file=sys.stderr)
+                
     if not mobile.is_connected:
         raise RuntimeError(not_connected_msg)
     return mobile.get_device()
