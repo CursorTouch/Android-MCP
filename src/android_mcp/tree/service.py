@@ -91,7 +91,7 @@ class Tree:
         attributes.get('password') == "true" or
         attributes.get('class') in INTERACTIVE_CLASSES)
 
-    def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7) -> Image.Image:
+    def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7, annotate:bool=True) -> Image.Image:
         screenshot = self.mobile.get_screenshot(scale=scale)
         # Add padding
         padding = 15
@@ -140,7 +140,8 @@ class Tree:
             draw.text((label_x1 + 2, label_y1 + 2), str(label), fill=(255, 255, 255), font=font)
         
         # Draw annotations sequentially for better performance and thread safety
-        for i, node in enumerate(nodes):
-            draw_annotation(i, node)
+        if annotate:
+            for i, node in enumerate(nodes):
+                draw_annotation(i, node)
 
         return padded_screenshot
