@@ -18,17 +18,17 @@ class Tree:
     def __init__(self,mobile:'Mobile'):
         self.mobile = mobile
 
-    def get_element_tree(self)->'Element':
-        tree_string = self.mobile.device.dump_hierarchy()
+    def get_element_tree(self, xml_data=None)->'Element':
+        tree_string = xml_data if xml_data else self.mobile.device.dump_hierarchy()
         return ElementTree.fromstring(tree_string)
     
-    def get_state(self)->TreeState:
-        interactive_elements=self.get_interactive_elements()
+    def get_state(self, xml_data=None)->TreeState:
+        interactive_elements=self.get_interactive_elements(xml_data=xml_data)
         return TreeState(interactive_elements=interactive_elements)
     
-    def get_interactive_elements(self)->list:
+    def get_interactive_elements(self, xml_data=None)->list:
         interactive_elements=[]
-        element_tree = self.get_element_tree()
+        element_tree = self.get_element_tree(xml_data=xml_data)
         nodes=element_tree.findall('.//node[@enabled="true"]')
         for node in nodes:
             if self.is_interactive(node):
@@ -90,8 +90,9 @@ class Tree:
         attributes.get('password') == "true" or
         attributes.get('class') in INTERACTIVE_CLASSES)
 
-    def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7) -> Image.Image:
-        screenshot = self.mobile.get_screenshot(scale=scale)
+    def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7, screenshot=None) -> Image.Image:
+        if screenshot is None:
+            screenshot = self.mobile.get_screenshot(scale=scale)
         # Add padding
         padding = 15
         width = screenshot.width + (2 * padding)

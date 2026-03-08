@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from argparse import ArgumentParser
 from android_mcp.mobile.service import Mobile
 from textwrap import dedent
+from typing import Literal, Optional
 import asyncio
 import sys
 
@@ -28,7 +29,7 @@ mobile=Mobile()
 
 _auto_connect_attempted = False
 
-not_connected_msg="No device connected. Use the ListDevices tool to see available devices, then ConnectDevice to connect."
+not_connected_msg="No device connected. Use the Device tool with action='list' to see available devices, then action='connect' to connect."
 
 def require_device():
     global _auto_connect_attempted
@@ -54,18 +55,24 @@ def require_device():
         raise RuntimeError(not_connected_msg)
     return mobile.get_device()
 
-@mcp.tool(name='ListDevices',description='List available ADB devices',annotations=ToolAnnotations(title="List Devices",readOnlyHint=True))
-def list_devices_tool():
-    devices=Mobile.list_devices()
-    if not devices:
-        return "No devices found. Ensure a device is connected and ADB is running."
-    lines=[f"{serial}\t{state}" for serial,state in devices]
-    return "\n".join(lines)
-
-@mcp.tool(name='ConnectDevice',description='Connect to an ADB device by serial number',annotations=ToolAnnotations(title="Connect Device"))
-def connect_device_tool(serial:str):
-    mobile.connect(serial)
-    return f'Connected to {serial}'
+@mcp.tool(name='Device',description='Manage ADB devices (list, connect, or disconnect)',annotations=ToolAnnotations(title="Device"))
+def device_tool(action:Literal['list','connect','disconnect'], serial:Optional[str]=None):
+    if action == 'list':
+        devices=Mobile.list_devices()
+        if not devices:
+            return "No devices found. Ensure a device is connected and ADB is running."
+        lines=[f"{device_serial}\t{state}" for device_serial,state in devices]
+        return "\n".join(lines)
+    elif action == 'connect':
+        if not serial:
+            return "A serial number is required to connect."
+        mobile.connect(serial)
+        return f'Connected to {serial}'
+    elif action == 'disconnect':
+        mobile.disconnect()
+        return "Disconnected from device."
+    else:
+        return f"Unknown action: {action}"
 
 @mcp.tool(name='Click',description='Click on a specific cordinate',annotations=ToolAnnotations(title="Click",destructiveHint=True))
 def click_tool(x:int,y:int):

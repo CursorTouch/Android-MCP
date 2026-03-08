@@ -39,6 +39,9 @@ class Mobile:
             self.device = None
             raise RuntimeError(f"Unexpected error connecting to device {serial}: {e}")
 
+    def disconnect(self):
+        self.device = None
+
     @property
     def is_connected(self):
         return self.device is not None
@@ -46,24 +49,62 @@ class Mobile:
     def get_device(self):
         return self.device
 
-    def get_state(self,use_vision=False,as_bytes:bool=False,as_base64:bool=False,use_annotation:bool=True):
+    def capture_data(self, use_vision: bool = True):
+        import threading
+        data = {}
+
+        def get_xml():
+            try:
+                data['xml'] = self.device.dump_hierarchy()
+            except Exception as e:
+                data['xml_error'] = e
+
+        def get_img():
+            try:
+                # Use format="pillow" to ensure we get a PIL image immediately
+                data['img'] = self.device.screenshot(format="pillow")
+            except Exception as e:
+                data['img_error'] = e
+
+        threads = [threading.Thread(target=get_xml)]
+        if use_vision:
+            threads.append(threading.Thread(target=get_img))
+
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        if 'xml_error' in data:
+            raise data['xml_error']
+        if use_vision and 'img_error' in data:
+            raise data['img_error']
+
+        return data.get('xml'), data.get('img')
+
+    def get_state(self, use_vision=False, as_bytes: bool = False, as_base64: bool = False, use_annotation: bool = True):
         try:
+            xml_data, screenshot_data = self.capture_data(use_vision=use_vision)
             tree = Tree(self)
-            tree_state = tree.get_state()
+            tree_state = tree.get_state(xml_data=xml_data)
+
             if use_vision:
-                nodes=tree_state.interactive_elements
+                nodes = tree_state.interactive_elements
                 if use_annotation:
-                    screenshot=tree.annotated_screenshot(nodes=nodes,scale=1.0)
+                    screenshot = tree.annotated_screenshot(nodes=nodes, scale=1.0, screenshot=screenshot_data)
+                else:
+                    screenshot = screenshot_data
+
                 if os.getenv("SCREENSHOT_QUANTIZED") in ["1", "yes", "true", True]:
                     screenshot = self.quantized_screenshot(screenshot)
-                    
+
                 if as_base64:
-                    screenshot=self.as_base64(screenshot)
+                    screenshot = self.as_base64(screenshot)
                 elif as_bytes:
-                    screenshot=self.screenshot_in_bytes(screenshot)
+                    screenshot = self.screenshot_in_bytes(screenshot)
             else:
-                screenshot=None
-            return MobileState(tree_state=tree_state,screenshot=screenshot)
+                screenshot = None
+            return MobileState(tree_state=tree_state, screenshot=screenshot)
         except Exception as e:
             raise RuntimeError(f"Failed to get device state: {e}")
     
