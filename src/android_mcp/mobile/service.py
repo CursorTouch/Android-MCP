@@ -46,21 +46,21 @@ class Mobile:
     def get_device(self):
         return self.device
 
-    def get_state(self,use_vision=False,as_bytes:bool=False,as_base64:bool=False,annotate:bool=True):
+    def get_state(self,use_vision=False,as_bytes:bool=False,as_base64:bool=False,use_annotation:bool=True):
         try:
             tree = Tree(self)
             tree_state = tree.get_state()
             if use_vision:
                 nodes=tree_state.interactive_elements
-                annotated_screenshot=tree.annotated_screenshot(nodes=nodes,scale=1.0,annotate=annotate)
+                if use_annotation:
+                    screenshot=tree.annotated_screenshot(nodes=nodes,scale=1.0)
                 if os.getenv("SCREENSHOT_QUANTIZED") in ["1", "yes", "true", True]:
-                    annotated_screenshot = self.quantized_screenshot(annotated_screenshot)
+                    screenshot = self.quantized_screenshot(screenshot)
+                    
                 if as_base64:
-                    screenshot=self.as_base64(annotated_screenshot)
+                    screenshot=self.as_base64(screenshot)
                 elif as_bytes:
-                    screenshot=self.screenshot_in_bytes(annotated_screenshot)
-                else:
-                    screenshot=annotated_screenshot
+                    screenshot=self.screenshot_in_bytes(screenshot)
             else:
                 screenshot=None
             return MobileState(tree_state=tree_state,screenshot=screenshot)

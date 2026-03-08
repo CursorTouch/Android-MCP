@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 import random
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 if TYPE_CHECKING:
     from android_mcp.mobile import Mobile
@@ -20,7 +20,6 @@ class Tree:
 
     def get_element_tree(self)->'Element':
         tree_string = self.mobile.device.dump_hierarchy()
-        logger.debug(tree_string)
         return ElementTree.fromstring(tree_string)
     
     def get_state(self)->TreeState:
@@ -91,7 +90,7 @@ class Tree:
         attributes.get('password') == "true" or
         attributes.get('class') in INTERACTIVE_CLASSES)
 
-    def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7, annotate:bool=True) -> Image.Image:
+    def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7) -> Image.Image:
         screenshot = self.mobile.get_screenshot(scale=scale)
         # Add padding
         padding = 15
@@ -140,8 +139,7 @@ class Tree:
             draw.text((label_x1 + 2, label_y1 + 2), str(label), fill=(255, 255, 255), font=font)
         
         # Draw annotations sequentially for better performance and thread safety
-        if annotate:
-            for i, node in enumerate(nodes):
-                draw_annotation(i, node)
+        for i, node in enumerate(nodes):
+            draw_annotation(i, node)
 
         return padded_screenshot
