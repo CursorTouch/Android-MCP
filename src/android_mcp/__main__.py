@@ -53,6 +53,18 @@ def require_device():
         raise RuntimeError(not_connected_msg)
     return mobile.get_device()
 
+def _resolve_resource_id(device, resource_id: str) -> str:
+    """Auto-expand short resourceId (e.g. 'btn_login') to full form (e.g. 'com.example.app:id/btn_login') using the current foreground app package."""
+    if not resource_id or '/' in resource_id or ':' in resource_id:
+        return resource_id
+    try:
+        pkg = device.app_current().get('package', '')
+    except Exception:
+        pkg = ''
+    if pkg:
+        return f'{pkg}:id/{resource_id}'
+    return resource_id
+
 @mcp.tool(name='ListDevices',description='List available ADB devices',annotations=ToolAnnotations(title="List Devices",readOnlyHint=True))
 def list_devices_tool():
     devices=Mobile.list_devices()
@@ -77,7 +89,7 @@ def click_by_selector_tool(text:str=None,resourceId:str=None,className:str=None,
     device=require_device()
     kwargs={}
     if text: kwargs['text']=text
-    if resourceId: kwargs['resourceId']=resourceId
+    if resourceId: kwargs['resourceId']=_resolve_resource_id(device, resourceId)
     if className: kwargs['className']=className
     if description: kwargs['description']=description
     if not kwargs:
@@ -143,7 +155,7 @@ def wait_for_element_tool(text:str=None,resourceId:str=None,className:str=None,d
     device=require_device()
     kwargs={}
     if text: kwargs['text']=text
-    if resourceId: kwargs['resourceId']=resourceId
+    if resourceId: kwargs['resourceId']=_resolve_resource_id(device, resourceId)
     if className: kwargs['className']=className
     if description: kwargs['description']=description
     if not kwargs:
