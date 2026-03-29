@@ -37,11 +37,14 @@ class Tree:
                 if not name:
                     continue
                 x_center,y_center = get_center_cordinates((x1,y1,x2,y2))
+                raw_id=node.get('resource-id','')
+                short_id=raw_id.split('/')[-1] if '/' in raw_id else raw_id
                 interactive_elements.append(ElementNode(**{
                     'name':name,
                     'class_name':node.get('class'),
                     'coordinates':CenterCord(x=x_center,y=y_center),
-                    'bounding_box':BoundingBox(x1=x1,y1=y1,x2=x2,y2=y2)
+                    'bounding_box':BoundingBox(x1=x1,y1=y1,x2=x2,y2=y2),
+                    'resource_id':short_id
                 }))
         return interactive_elements
 

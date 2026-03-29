@@ -19,7 +19,6 @@ thus enabling to operate the mobile device like an actual USER.''')
 @asynccontextmanager
 async def lifespan(app: FastMCP):
     """Runs initialization code before the server starts and cleanup code after it shuts down."""
-    await asyncio.sleep(1) # Simulate startup latency
     yield
 
 mcp=FastMCP(name="Android-MCP",instructions=instructions)
@@ -73,6 +72,23 @@ def click_tool(x:int,y:int):
     device.click(x,y)
     return f'Clicked on ({x},{y})'
 
+@mcp.tool(name='ClickBySelector',description='Click on an element by selector (text, resourceId, className, description). More reliable than coordinate clicks — handles dynamic layouts and element reflow. At least one selector must be provided.',annotations=ToolAnnotations(title="Click By Selector",destructiveHint=True))
+def click_by_selector_tool(text:str=None,resourceId:str=None,className:str=None,description:str=None,index:int=0,timeout:float=5.0):
+    device=require_device()
+    kwargs={}
+    if text: kwargs['text']=text
+    if resourceId: kwargs['resourceId']=resourceId
+    if className: kwargs['className']=className
+    if description: kwargs['description']=description
+    if not kwargs:
+        return 'Error: at least one selector (text, resourceId, className, description) must be provided'
+    if index: kwargs['index']=index
+    el=device(**kwargs)
+    if not el.wait(timeout=timeout):
+        return f'Element not found with selectors {kwargs} within {timeout}s'
+    el.click()
+    return f'Clicked element matching {kwargs}'
+
 @mcp.tool(name='Snapshot',description='Get the state of the device. Optionally includes visual screenshot when use_vision=True. The use_annotation parameter (default True) can be set to False to get a clean screenshot without bounding boxes.',annotations=ToolAnnotations(title="Snapshot",readOnlyHint=True))
 def state_tool(use_vision:bool=False,use_annotation:bool=True):
     require_device()
@@ -121,6 +137,25 @@ def wait_tool(duration:int):
     device=require_device()
     device.sleep(duration)
     return f'Waited for {duration} seconds'
+
+@mcp.tool(name='WaitForElement',description='Wait for an element to appear on screen. Use this instead of Wait when content is loading dynamically. Returns element info when found or error on timeout.',annotations=ToolAnnotations(title="Wait For Element",readOnlyHint=True))
+def wait_for_element_tool(text:str=None,resourceId:str=None,className:str=None,description:str=None,timeout:float=10.0):
+    device=require_device()
+    kwargs={}
+    if text: kwargs['text']=text
+    if resourceId: kwargs['resourceId']=resourceId
+    if className: kwargs['className']=className
+    if description: kwargs['description']=description
+    if not kwargs:
+        return 'Error: at least one selector (text, resourceId, className, description) must be provided'
+    el=device(**kwargs)
+    if el.wait(timeout=timeout):
+        info=el.info
+        bounds=info.get('bounds',{})
+        cx=(bounds.get('left',0)+bounds.get('right',0))//2
+        cy=(bounds.get('top',0)+bounds.get('bottom',0))//2
+        return f'Element found: text="{info.get("text","")}" class={info.get("className","")} coords=({cx},{cy}) bounds=[{bounds.get("left",0)},{bounds.get("top",0)}][{bounds.get("right",0)},{bounds.get("bottom",0)}]'
+    return f'Element not found with selectors {kwargs} within {timeout}s'
 
 def main():
     mcp.run()

@@ -7,6 +7,7 @@ class ElementNode:
     class_name: str
     coordinates: 'CenterCord'
     bounding_box: 'BoundingBox'
+    resource_id: str = ''
 
 @dataclass
 class BoundingBox:
@@ -23,8 +24,8 @@ class TreeState:
     interactive_elements:list[ElementNode]
 
     def to_string(self):
-        data = [[index, node.name, node.class_name, node.coordinates.to_string()] for index, node in enumerate(self.interactive_elements)]
-        return tabulate(data, headers=["Label", "Name", "Class", "Coordinates"], tablefmt="plain")
+        data = [[index, node.name, node.resource_id, node.class_name, node.coordinates.to_string()] for index, node in enumerate(self.interactive_elements)]
+        return tabulate(data, headers=["Label", "Name", "ResourceId", "Class", "Coordinates"], tablefmt="plain")
     
 @dataclass
 class CenterCord:
