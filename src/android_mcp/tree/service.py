@@ -95,14 +95,8 @@ class Tree:
 
     def annotated_screenshot(self, nodes: list[ElementNode],scale:float=0.7) -> Image.Image:
         screenshot = self.mobile.get_screenshot(scale=scale)
-        # Add padding
-        padding = 15
-        width = screenshot.width + (2 * padding)
-        height = screenshot.height + (2 * padding)
-        padded_screenshot = Image.new("RGB", (width, height), color=(255, 255, 255))
-        padded_screenshot.paste(screenshot, (padding, padding))
 
-        draw = ImageDraw.Draw(padded_screenshot)
+        draw = ImageDraw.Draw(screenshot)
         font_size = 12
         try:
             font = ImageFont.truetype('arial.ttf', font_size)
@@ -116,12 +110,11 @@ class Tree:
             bounding_box = node.bounding_box
             color = get_random_color()
 
-            # Scale and pad the bounding box also clip the bounding box
             adjusted_box = (
-                int(bounding_box.x1 * scale) + padding,
-                int(bounding_box.y1 * scale) + padding,
-                int(bounding_box.x2 * scale) + padding,
-                int(bounding_box.y2 * scale) + padding
+                int(bounding_box.x1 * scale),
+                int(bounding_box.y1 * scale),
+                int(bounding_box.x2 * scale),
+                int(bounding_box.y2 * scale)
             )
             # Draw bounding box
             draw.rectangle(adjusted_box, outline=color, width=2)
@@ -131,18 +124,17 @@ class Tree:
             label_height = font_size
             left, top, right, bottom = adjusted_box
 
-            # Label position above bounding box
-            label_x1 = right - label_width
-            label_y1 = top - label_height - 4
+            # Label position above bounding box, clamped to image bounds
+            label_x1 = max(0, right - label_width)
+            label_y1 = max(0, top - label_height - 4)
             label_x2 = label_x1 + label_width
             label_y2 = label_y1 + label_height + 4
 
             # Draw label background and text
             draw.rectangle([(label_x1, label_y1), (label_x2, label_y2)], fill=color)
             draw.text((label_x1 + 2, label_y1 + 2), str(label), fill=(255, 255, 255), font=font)
-        
-        # Draw annotations sequentially for better performance and thread safety
+
         for i, node in enumerate(nodes):
             draw_annotation(i, node)
 
-        return padded_screenshot
+        return screenshot
