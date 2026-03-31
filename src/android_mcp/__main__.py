@@ -197,6 +197,33 @@ def require_device():
     _connect_preferred_device()
     return mobile.get_device()
 
+def _resolve_resource_id(device, resource_id: str) -> str:
+    """Auto-expand short resourceId (e.g. 'btn_login') to full form (e.g. 'com.example.app:id/btn_login') using the current foreground app package."""
+    if not resource_id or '/' in resource_id or ':' in resource_id:
+        return resource_id
+    try:
+        pkg = device.app_current().get('package', '')
+    except Exception:
+        pkg = ''
+    if pkg:
+        return f'{pkg}:id/{resource_id}'
+    return resource_id
+
+@mcp.tool(name='ListDevices',description='List available ADB devices',annotations=ToolAnnotations(title="List Devices",readOnlyHint=True))
+def list_devices_tool():
+    devices=Mobile.list_devices()
+    if not devices:
+        return "No devices found. Ensure a device is connected and ADB is running."
+    lines=[f"{serial}\t{state}" for serial,state in devices]
+    return "\n".join(lines)
+
+@mcp.tool(name='ConnectDevice',description='Connect to an ADB device by serial number',annotations=ToolAnnotations(title="Connect Device"))
+def connect_device_tool(serial:str):
+    target = Mobile.normalize_wifi_serial(serial) if ":" in serial else serial
+    if ":" in target:
+        Mobile.adb_connect(target)
+    mobile.connect(target)
+    return f'Connected to {target}'
 
 @mcp.tool(
     name="Device",
@@ -241,6 +268,23 @@ def click_tool(x: int, y: int):
     device.click(x, y)
     return f"Clicked on ({x},{y})"
 
+
+@mcp.tool(name='ClickBySelector',description='Click on an element by selector (text, resourceId, className, description). More reliable than coordinate clicks — handles dynamic layouts and element reflow. At least one selector must be provided.',annotations=ToolAnnotations(title="Click By Selector",destructiveHint=True))
+def click_by_selector_tool(text:str=None,resourceId:str=None,className:str=None,description:str=None,index:int=0,timeout:float=5.0):
+    device=require_device()
+    kwargs={}
+    if text: kwargs['text']=text
+    if resourceId: kwargs['resourceId']=_resolve_resource_id(device, resourceId)
+    if className: kwargs['className']=className
+    if description: kwargs['description']=description
+    if not kwargs:
+        return 'Error: at least one selector (text, resourceId, className, description) must be provided'
+    if index: kwargs['index']=index
+    el=device(**kwargs)
+    if not el.wait(timeout=timeout):
+        return f'Element not found with selectors {kwargs} within {timeout}s'
+    el.click()
+    return f'Clicked element matching {kwargs}'
 
 @mcp.tool(
     name="Snapshot",
@@ -336,6 +380,25 @@ def wait_tool(duration: int):
     device.sleep(duration)
     return f"Waited for {duration} seconds"
 
+
+@mcp.tool(name='WaitForElement',description='Wait for an element to appear on screen. Use this instead of Wait when content is loading dynamically. Returns element info when found or error on timeout.',annotations=ToolAnnotations(title="Wait For Element",readOnlyHint=True))
+def wait_for_element_tool(text:str=None,resourceId:str=None,className:str=None,description:str=None,timeout:float=10.0):
+    device=require_device()
+    kwargs={}
+    if text: kwargs['text']=text
+    if resourceId: kwargs['resourceId']=_resolve_resource_id(device, resourceId)
+    if className: kwargs['className']=className
+    if description: kwargs['description']=description
+    if not kwargs:
+        return 'Error: at least one selector (text, resourceId, className, description) must be provided'
+    el=device(**kwargs)
+    if el.wait(timeout=timeout):
+        info=el.info
+        bounds=info.get('bounds',{})
+        cx=(bounds.get('left',0)+bounds.get('right',0))//2
+        cy=(bounds.get('top',0)+bounds.get('bottom',0))//2
+        return f'Element found: text="{info.get("text","")}" class={info.get("className","")} coords=({cx},{cy}) bounds=[{bounds.get("left",0)},{bounds.get("top",0)}][{bounds.get("right",0)},{bounds.get("bottom",0)}]'
+    return f'Element not found with selectors {kwargs} within {timeout}s'
 
 def main():
     mcp.run()

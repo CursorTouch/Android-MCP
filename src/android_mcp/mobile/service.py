@@ -134,7 +134,6 @@ class Mobile:
                     screenshot = tree.annotated_screenshot(nodes=nodes, scale=1.0, screenshot=screenshot_data)
                 else:
                     screenshot = screenshot_data
-
                 if os.getenv("SCREENSHOT_QUANTIZED") in ["1", "yes", "true", True]:
                     screenshot = self.quantized_screenshot(screenshot)
 
