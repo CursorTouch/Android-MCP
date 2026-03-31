@@ -3,7 +3,7 @@ name = "android-mcp"
 version = "0.1.0"
 description = "Lightweight MCP Server for Android Operating System"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13,<3.14"
 license = { file = "LICENSE" }
 urls = { Homepage = "https://github.com/CursorTouch/Android-MCP" }
 keywords = ["android", "mcp", "mobile", "automation"]

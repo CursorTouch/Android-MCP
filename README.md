@@ -5,7 +5,7 @@
   <a href="https://github.com/CursorTouch/Android-MCP/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
   </a>
-  <img src="https://img.shields.io/badge/python-3.12%2B-blue" alt="Python">
+  <img src="https://img.shields.io/badge/python-3.13-blue" alt="Python">
   <img src="https://img.shields.io/badge/platform-Android%2010+-blue" alt="Platform">
   <img src="https://img.shields.io/github/last-commit/CursorTouch/Android-MCP" alt="Last Commit">
   <br>
@@ -46,7 +46,7 @@
 
 ### 📦 Prerequisites
 
-- Python 3.10+
+- Python 3.13
 - ADB (Android Debug Bridge)
 - Android 10+ (Emulator/ Android Device)
 
@@ -74,6 +74,8 @@ You can run the Android MCP server using **UVX** (recommended) or **UV** (for lo
 
 No need to install dependencies manually. Just configure Claude Desktop:
 
+> **Windows note:** Use Python 3.13 for `uvx` on Windows. Python 3.14 currently fails to resolve a transitive `pywin32` dependency used by the MCP stack.
+
 1. **Locate your config file**
    - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
    - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -85,6 +87,8 @@ No need to install dependencies manually. Just configure Claude Desktop:
        "android-mcp": {
          "command": "uvx",
          "args": [
+           "--python",
+           "3.13",
            "android-mcp"
          ]
        }
@@ -119,6 +123,7 @@ No need to install dependencies manually. Just configure Claude Desktop:
    }
    ```
    > **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory. Add `"--device", "<YOUR_DEVICE_serial>"` to args to target a specific device.
+   > `uv sync` follows the repo's `.python-version`, so local development uses Python 3.13 by default.
 
 3. **Restart the Claude Desktop**
 

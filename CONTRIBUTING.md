@@ -1,6 +1,6 @@
 # Contributing to Android-MCP
 
-Thank you for your interest in contributing to MCP-Use! This document provides guidelines and instructions for contributing to this project.
+Thank you for your interest in contributing to Android-MCP! This document provides guidelines and instructions for contributing to this project.
 
 ## Table of Contents
 
@@ -27,7 +27,7 @@ Thank you for your interest in contributing to MCP-Use! This document provides g
 ### Development Environment
 
 Android-MCP requires:
-- Python 3.11 or later
+- Python 3.13
 
 ### Installation from Source
 
@@ -35,14 +35,14 @@ Android-MCP requires:
 2. Clone your fork locally:
 
 ```bash
-git clone https://github.com/Jeomon/Windows-MCP.git
+git clone https://github.com/CursorTouch/Android-MCP.git
 cd Android-MCP
 ```
 
 3. Install the package in development mode:
 
 ```bash
-pip install -e ".[dev,search]"
+uv sync
 ```
 
 4. Set up pre-commit hooks:
