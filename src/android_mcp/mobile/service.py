@@ -6,6 +6,7 @@ from PIL import Image
 import subprocess
 import base64
 import os
+from typing import Optional
 
 class Mobile:
     def __init__(self):
@@ -27,6 +28,45 @@ class Mobile:
             raise RuntimeError("adb not found. Ensure ADB is installed and on PATH.")
         except subprocess.TimeoutExpired:
             raise RuntimeError("adb devices timed out.")
+
+    @staticmethod
+    def adb_connect(serial: str) -> None:
+        try:
+            result = subprocess.run(
+                ['adb', 'connect', serial], capture_output=True, text=True, timeout=15
+            )
+        except FileNotFoundError:
+            raise RuntimeError("adb not found. Ensure ADB is installed and on PATH.")
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"adb connect {serial} timed out.")
+
+        output = "\n".join(
+            part.strip()
+            for part in (result.stdout, result.stderr)
+            if part and part.strip()
+        )
+        if result.returncode != 0:
+            raise RuntimeError(output or f"adb connect {serial} failed.")
+
+        lowered = output.lower()
+        if "connected to" in lowered or "already connected to" in lowered:
+            return
+
+        if output:
+            raise RuntimeError(output)
+
+    @staticmethod
+    def normalize_wifi_serial(host: Optional[str]) -> Optional[str]:
+        if host is None:
+            return None
+
+        value = host.strip()
+        if not value:
+            return None
+
+        if ":" not in value:
+            value = f"{value}:5555"
+        return value
 
     def connect(self,serial:str):
         try:

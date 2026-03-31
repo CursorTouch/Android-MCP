@@ -66,6 +66,13 @@ Before running the server, ensure your Android device is connected and recognize
    ```
    If the list is empty or shows "unauthorized", check your USB debugging settings on the device.
 
+For WiFi ADB, connect the device first:
+
+```shell
+adb connect 192.168.1.3:5555
+adb devices
+```
+
 ### 🏁 Getting Started
 
 You can run the Android MCP server using **UVX** (recommended) or **UV** (for local development).
@@ -95,7 +102,47 @@ No need to install dependencies manually. Just configure Claude Desktop:
      }
    }
    ```
-   > **Note:** By default, it connects to `emulator-5554`. To connect to a specific device, add `"--device", "<YOUR_DEVICE_serial>"` to the args list.
+   > **Note:** The server starts first and connects lazily when a tool runs. If no device is specified, it auto-detects the first available ADB device instead of hardcoding `emulator-5554`.
+
+   Configure a specific WiFi device with environment variables:
+
+   ```json
+   {
+     "mcpServers": {
+       "android-mcp": {
+         "command": "uvx",
+         "args": [
+           "--python",
+           "3.13",
+           "android-mcp"
+         ],
+         "env": {
+           "ANDROID_MCP_CONNECTION": "wifi",
+           "ANDROID_MCP_HOST": "192.168.1.3"
+         }
+       }
+     }
+   }
+   ```
+
+   Or pass explicit flags:
+
+   ```json
+   {
+     "mcpServers": {
+       "android-mcp": {
+         "command": "uvx",
+         "args": [
+           "--python",
+           "3.13",
+           "android-mcp",
+           "--wifi",
+           "192.168.1.3"
+         ]
+       }
+     }
+   }
+   ```
 
 #### Option 2: UV Mode (Local Development)
 
@@ -122,8 +169,28 @@ No need to install dependencies manually. Just configure Claude Desktop:
      }
    }
    ```
-   > **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory. Add `"--device", "<YOUR_DEVICE_serial>"` to args to target a specific device.
+   > **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory. You can also add `"--device", "<YOUR_DEVICE_serial>"`, `"--wifi", "192.168.1.3"`, or `"--usb"` to control device selection.
    > `uv sync` follows the repo's `.python-version`, so local development uses Python 3.13 by default.
+
+### 🔌 Device Selection
+
+Android-MCP resolves devices lazily when a tool is called, so the MCP server can start even if no device is available yet.
+
+- `--device RFCN2013V8D`: connect to a specific USB serial
+- `--device 192.168.1.3:5555`: connect to a specific WiFi ADB target
+- `--wifi 192.168.1.3`: use WiFi and auto-append port `5555`
+- `--usb`: auto-detect the first USB-connected device
+- `--usb RFCN2013V8D`: use a specific USB device
+- `--connection wifi`: prefer the first available WiFi ADB device
+- `--connection usb`: prefer the first available USB device
+
+Supported environment variables:
+
+- `ANDROID_MCP_DEVICE`: explicit serial or `host:port`
+- `ANDROID_MCP_CONNECTION`: `auto`, `usb`, or `wifi`
+- `ANDROID_MCP_HOST`: WiFi host, with `:5555` added automatically when omitted
+
+If nothing is configured, Android-MCP will use the first available ADB device reported by `adb devices`. If none are available, tool calls return a configuration error instead of crashing the MCP handshake.
 
 3. **Restart the Claude Desktop**
 
