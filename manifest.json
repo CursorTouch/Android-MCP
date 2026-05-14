@@ -1,7 +1,7 @@
 {
-  "manifest_version": "0.2",
+  "manifest_version": "0.4",
   "name": "Android-MCP",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Lightweight MCP Server for Android Operating System",
   "long_description": "Android-MCP is a lightweight, open-source tool that bridge between AI agents and Android devices. Running as an MCP server, it lets LLM agents perform real-world tasks such as **app navigation, UI interaction and automated QA testing** without relying on traditional computer-vision pipelines or preprogramed scripts.\n\n**KEY FEATURES**\n- **Native Android Integration**: Interact with UI elements via ADB and the Android Accessibility API.\n- **Bring Your Own LLM/VLM**: Works with any language model.\n- **Rich Toolset for Mobile Automation**: Pre-built tools for gestures, keystrokes, capture, device state, etc.\n- **Real-Time Interaction**: Typical latency between actions ranges 2-4s.\n\n**MINIMUM REQUIREMENTS**\n- Python 3.13\n- Android Debug Bridge (ADB)\nEnsure ADB is installed and your device is connected/authorized.\n- UV Package Manager\nThis MCP server requires UV, a fast Python package manager.\nInstallation:\n`curl -LsSf https://astral.sh/uv/install.sh | sh`\nFor detailed installation instructions, [see the UV documentation](https://github.com/astral-sh/uv)\n\n**WINDOWS NOTE**\nUse Python 3.13 for `uvx` on Windows. Python 3.14 currently fails to resolve a transitive `pywin32` dependency from the MCP stack.",
   "author": {
@@ -12,8 +12,8 @@
   "documentation": "https://github.com/CursorTouch/Android-MCP",
   "icon": "assets/logo.png",
   "server": {
-    "type": "python",
-    "entry_point": "./src/android_mcp/__main__.py",
+    "type": "uv",
+    "entry_point": "src/android_mcp/__main__.py",
     "mcp_config": {
       "command": "uv",
       "args": [
@@ -21,7 +21,36 @@
         "${__dirname}",
         "run",
         "android-mcp"
-      ]
+      ],
+      "env": {
+        "UV_NO_SYNC": "1",
+        "ANDROID_MCP_DEVICE": "${user_config.device}",
+        "ANDROID_MCP_CONNECTION": "${user_config.connection}",
+        "SCREENSHOT_QUANTIZED": "${user_config.screenshot_quantized}"
+      }
+    }
+  },
+  "user_config": {
+    "device": {
+      "type": "string",
+      "title": "Device Serial",
+      "description": "ADB device serial number or host:port for Wi-Fi ADB (e.g. emulator-5554 or 192.168.1.10:5555). Leave blank to auto-select the only connected device.",
+      "required": false,
+      "default": ""
+    },
+    "connection": {
+      "type": "string",
+      "title": "Connection Type",
+      "description": "Preferred ADB connection method. 'auto' picks whichever device is available, 'usb' forces USB only, 'wifi' forces Wi-Fi ADB only.",
+      "required": false,
+      "default": "auto"
+    },
+    "screenshot_quantized": {
+      "type": "boolean",
+      "title": "Compress Screenshots",
+      "description": "Quantize screenshots to reduce token usage when sending images to the model. Slightly reduces image quality.",
+      "required": false,
+      "default": false
     }
   },
   "tools": [
