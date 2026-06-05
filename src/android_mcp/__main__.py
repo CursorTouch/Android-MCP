@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from textwrap import dedent
 from typing import Literal, Optional
-import asyncio
 import os
 
 from fastmcp import FastMCP
@@ -185,11 +184,10 @@ def _connect_preferred_device() -> None:
 @asynccontextmanager
 async def lifespan(app: FastMCP):
     """Runs initialization code before the server starts and cleanup code after it shuts down."""
-    await asyncio.sleep(1)
     yield
 
 
-mcp = FastMCP(name="Android-MCP", instructions=instructions)
+mcp = FastMCP(name="Android-MCP", instructions=instructions, lifespan=lifespan)
 mobile = Mobile()
 
 
