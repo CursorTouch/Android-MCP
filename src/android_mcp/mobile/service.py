@@ -13,16 +13,47 @@ class Mobile:
         self.device = None
 
     @staticmethod
+    def _adb_devices_list() -> list[tuple[str, str]]:
+        result = subprocess.run(
+            ['adb', 'devices'], capture_output=True, text=True, timeout=10
+        )
+        devices = []
+        for line in result.stdout.strip().splitlines()[1:]:
+            # adb devices uses tab separation but some builds use variable whitespace
+            parts = line.split('\t') if '\t' in line else line.split(None, 1)
+            if len(parts) == 2 and parts[1].strip():
+                devices.append((parts[0].strip(), parts[1].strip()))
+        return devices
+
+    @staticmethod
+    def _connect_mdns_tls_peers() -> None:
+        """Auto-connect any ADB-over-TLS peers visible via mDNS that aren't yet connected."""
+        try:
+            mdns = subprocess.run(
+                ['adb', 'mdns', 'services'], capture_output=True, text=True, timeout=5
+            )
+            for line in mdns.stdout.splitlines()[1:]:
+                if '_adb-tls-connect' not in line:
+                    continue
+                # Format: <service-name>  <type>  <ip>:<port>
+                parts = line.split()
+                if len(parts) >= 3:
+                    ip_port = parts[-1]
+                    subprocess.run(
+                        ['adb', 'connect', ip_port],
+                        capture_output=True, timeout=5
+                    )
+        except Exception:
+            pass  # mDNS not available or no TLS peers -- not an error
+
+    @staticmethod
     def list_devices():
         try:
-            result = subprocess.run(
-                ['adb', 'devices'], capture_output=True, text=True, timeout=10
-            )
-            devices = []
-            for line in result.stdout.strip().splitlines()[1:]:
-                parts = line.split('\t')
-                if len(parts) == 2:
-                    devices.append((parts[0], parts[1]))
+            devices = Mobile._adb_devices_list()
+            if not devices:
+                # Nothing in classic list -- try to surface ADB-over-TLS peers via mDNS
+                Mobile._connect_mdns_tls_peers()
+                devices = Mobile._adb_devices_list()
             return devices
         except FileNotFoundError:
             raise RuntimeError("adb not found. Ensure ADB is installed and on PATH.")
@@ -59,16 +90,14 @@ class Mobile:
     def normalize_wifi_serial(host: Optional[str]) -> Optional[str]:
         if host is None:
             return None
-
         value = host.strip()
         if not value:
             return None
-
         if ":" not in value:
             value = f"{value}:5555"
         return value
 
-    def connect(self,serial:str):
+    def connect(self, serial: str):
         try:
             self.device = u2.connect(serial)
             self.device.info
@@ -101,7 +130,6 @@ class Mobile:
 
         def get_img():
             try:
-                # Use format="pillow" to ensure we get a PIL image immediately
                 data['img'] = self.device.screenshot(format="pillow")
             except Exception as e:
                 data['img_error'] = e
@@ -146,13 +174,13 @@ class Mobile:
             return MobileState(tree_state=tree_state, screenshot=screenshot)
         except Exception as e:
             raise RuntimeError(f"Failed to get device state: {e}")
-    
-    def get_screenshot(self,scale:float=0.7)->Image.Image:
+
+    def get_screenshot(self, scale: float = 0.7) -> Image.Image:
         try:
-            screenshot=self.device.screenshot()
+            screenshot = self.device.screenshot()
             if screenshot is None:
                 raise ValueError("Screenshot capture returned None.")
-            size=(screenshot.width*scale, screenshot.height*scale)
+            size = (screenshot.width * scale, screenshot.height * scale)
             screenshot.thumbnail(size=size, resample=Image.Resampling.LANCZOS)
             return screenshot
         except Exception as e:
@@ -162,35 +190,32 @@ class Mobile:
         if screenshot.mode == 'RGBA':
             screenshot = screenshot.convert('RGB')
         screenshot = screenshot.convert('P', palette=Image.Palette.ADAPTIVE, colors=256)
-
         io = BytesIO()
         screenshot.save(io, format='PNG', optimize=True)
         return Image.open(io)
 
-    def screenshot_in_bytes(self,screenshot:Image.Image)->bytes:
+    def screenshot_in_bytes(self, screenshot: Image.Image) -> bytes:
         try:
             if screenshot is None:
                 raise ValueError("Screenshot is None")
-            io=BytesIO()
-            screenshot.save(io,format='PNG')
-            bytes=io.getvalue()
-            if len(bytes) == 0:
+            io = BytesIO()
+            screenshot.save(io, format='PNG')
+            result = io.getvalue()
+            if len(result) == 0:
                 raise ValueError("Screenshot conversion resulted in empty bytes.")
-            return bytes
+            return result
         except Exception as e:
             raise RuntimeError(f"Failed to convert screenshot to bytes: {e}")
 
-    def as_base64(self,screenshot:Image.Image)->str:
+    def as_base64(self, screenshot: Image.Image) -> str:
         try:
             if screenshot is None:
                 raise ValueError("Screenshot is None")
-            io=BytesIO()
-            screenshot.save(io,format='PNG')
-            bytes=io.getvalue()
-            if len(bytes) == 0:
+            io = BytesIO()
+            screenshot.save(io, format='PNG')
+            result = io.getvalue()
+            if len(result) == 0:
                 raise ValueError("Screenshot conversion resulted in empty bytes.")
-            return base64.b64encode(bytes).decode('utf-8')
+            return base64.b64encode(result).decode('utf-8')
         except Exception as e:
             raise RuntimeError(f"Failed to convert screenshot to base64: {e}")
-
-    
