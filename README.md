@@ -172,6 +172,23 @@ No need to install dependencies manually. Just configure Claude Desktop:
    > **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory. You can also add `"--device", "<YOUR_DEVICE_serial>"`, `"--wifi", "192.168.1.3"`, or `"--usb"` to control device selection.
    > `uv sync` follows the repo's `.python-version`, so local development uses Python 3.13 by default.
 
+#### Option 3: OpenCode
+
+You can also use Android-MCP with [OpenCode](https://opencode.ai). After cloning and installing the repo (see Option 2), add the server as a local MCP in your OpenCode config (`opencode.json`):
+
+```json
+{
+  "mcp": {
+    "android-mcp": {
+      "type": "local",
+      "command": ["uv", "--directory", "</PATH/TO/Android-MCP>", "run", "android-mcp"]
+    }
+  }
+}
+```
+
+> **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory. As with UV mode, you can append `"--device"`, `"--wifi"`, `"--usb"`, etc. to the `command` array to control device selection.
+
 ### 🔌 Device Selection
 
 Android-MCP resolves devices lazily when a tool is called, so the MCP server can start even if no device is available yet.
