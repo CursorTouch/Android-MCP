@@ -104,6 +104,28 @@ No need to install dependencies manually. Just configure Claude Desktop:
    ```
    > **Note:** The server starts first and connects lazily when a tool runs. If no device is specified, it auto-detects the first available ADB device instead of hardcoding `emulator-5554`.
 
+   Optional local guardrail with [Armorer Guard](https://github.com/ArmorerLabs/Armorer-Guard):
+
+   ```json
+   {
+     "mcpServers": {
+       "android-mcp": {
+         "command": "armorer-guard",
+         "args": [
+           "mcp-proxy",
+           "--",
+           "uvx",
+           "--python",
+           "3.13",
+           "android-mcp"
+         ]
+       }
+     }
+   }
+   ```
+
+   This wraps the same Android MCP server with a local proxy that inspects tool-call arguments for prompt injection, credential leakage, exfiltration risk, and dangerous actions before forwarding safe calls to the device-control tools.
+
    Configure a specific WiFi device with environment variables:
 
    ```json
