@@ -62,8 +62,9 @@ Before running the server, ensure your Android device is connected and recognize
 3. You should see your device listed:
    ```
    List of devices attached
-   emulator-5554   device
+   R38M30XXXXX   device
    ```
+   The serial number will differ per device. Emulators show serials like `emulator-5554`.
    If the list is empty or shows "unauthorized", check your USB debugging settings on the device.
 
 For WiFi ADB, connect the device first:
@@ -102,7 +103,7 @@ No need to install dependencies manually. Just configure Claude Desktop:
      }
    }
    ```
-   > **Note:** The server starts first and connects lazily when a tool runs. If no device is specified, it auto-detects the first available ADB device instead of hardcoding `emulator-5554`.
+   > **Note:** The server starts first and connects lazily when a tool runs. If no device is specified, it auto-detects connected devices and **prefers physical devices over emulators**. Use `--device <serial>` or the `ANDROID_MCP_DEVICE` environment variable to target a specific device.
 
    Configure a specific WiFi device with environment variables:
 

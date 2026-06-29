@@ -113,6 +113,17 @@ def _format_available_devices() -> str:
     return f" Available devices: {formatted}."
 
 
+def _is_emulator(serial: str) -> bool:
+    """Return True if the serial identifies an Android emulator rather than a physical device.
+
+    Emulator serials produced by the Android Emulator always begin with "emulator-"
+    (e.g. "emulator-5554").  Physical devices connected via USB have alphanumeric
+    serials (e.g. "RFCW70CZWKV"); physical devices connected via TCP/IP (Wi-Fi ADB)
+    contain a colon (e.g. "192.168.1.10:5555").
+    """
+    return serial.startswith("emulator-")
+
+
 def _pick_auto_device(connection: str) -> Optional[str]:
     devices = Mobile.list_devices()
     online = [serial for serial, state in devices if state == "device"]
@@ -126,11 +137,17 @@ def _pick_auto_device(connection: str) -> Optional[str]:
         return None
 
     if connection == "usb":
+        # Genuine USB-connected physical devices: no colon and not an emulator.
         for serial in online:
-            if ":" not in serial:
+            if ":" not in serial and not _is_emulator(serial):
                 return serial
         return None
 
+    # connection == "auto": prefer physical devices (USB or Wi-Fi) over emulators.
+    for serial in online:
+        if not _is_emulator(serial):
+            return serial
+    # Fall back to emulator only when no physical device is connected.
     return online[0]
 
 
