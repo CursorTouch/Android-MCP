@@ -17,3 +17,4 @@ adb_diag*.command
 adb_diag*.sh
 adb_diag*.txt
 adb_probe.command
+git_commit.command
