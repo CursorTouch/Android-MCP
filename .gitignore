@@ -10,3 +10,10 @@ wheels/
 .venv
 *.mcpb
 notebook.ipynb
+
+# Local test artefacts (not part of the project)
+*.log
+adb_diag*.command
+adb_diag*.sh
+adb_diag*.txt
+adb_probe.command
