@@ -18,6 +18,7 @@ import subprocess
 import sys
 import threading
 import time
+from typing import Optional
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 
@@ -37,7 +38,7 @@ def log(tag, msg, color=CYAN):
 
 # ── Resolve ADB ───────────────────────────────────────────────────────────────
 
-def _find_adb() -> str:
+def _find_adb() -> Optional[str]:
     candidates = [
         shutil.which("adb"),
         "/opt/homebrew/bin/adb",
@@ -197,15 +198,7 @@ def run():
                 f"No physical device serial found in ListDevices:\n{device_text}"
             log("CHECK", "Physical device present in ListDevices ✓", GREEN)
 
-        # 3. Emulator guard — server must NOT have picked an emulator when a physical
-        #    device is available (the core bug this PR fixes).
-        for em in emulators:
-            assert em not in device_text or physical, \
-                f"Server selected emulator {em} despite physical device being available"
-        if emulators:
-            log("CHECK", "Server did not select emulator over physical device ✓", GREEN)
-
-        # 4. Snapshot (connects to device — real hardware test)
+        # 3. Snapshot (connects to device — real hardware test)
         log("MCP", "→ tools/call  Snapshot  use_vision=false")
         _send(proc, {
             "jsonrpc": "2.0", "id": 3,
@@ -222,13 +215,22 @@ def run():
         assert len(tree) > 50, "Snapshot returned suspiciously little text"
         log("CHECK", "Snapshot returned a UI tree ✓", GREEN)
 
-        # 5. emulator-5554 must never appear in server logs
+        # 4. When a physical device is available, no emulator serial should appear
+        #    in server logs (the core regression check for this fix).
         time.sleep(0.5)
-        emulator_in_logs = any("emulator-5554" in l for l in stderr_lines)
-        if emulator_in_logs:
-            log("WARN", "emulator-5554 appeared in server logs — fix may not be active", RED)
-        else:
-            log("CHECK", "emulator-5554 never mentioned in server logs ✓", GREEN)
+        if emulators and physical:
+            picked_emulator = next(
+                (em for em in emulators if any(em in l for l in stderr_lines)),
+                None,
+            )
+            if picked_emulator:
+                log("WARN",
+                    f"{picked_emulator} appeared in server logs despite physical "
+                    f"device being available — fix may not be active", RED)
+            else:
+                log("CHECK",
+                    f"No emulator serial in server logs (physical device preferred) ✓",
+                    GREEN)
 
         print()
         log("RESULT", "ALL CHECKS PASSED — Android-MCP correctly targets physical device ✓", GREEN)

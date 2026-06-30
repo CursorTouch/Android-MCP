@@ -3,8 +3,8 @@
 # Sources the user's zsh profile so Homebrew / Android SDK paths are available.
 #
 # Usage:
-#   Double-click in Finder            — test any connected physical device
-#   Open With > Terminal (with args)  — pass a specific serial, e.g. RFCW70CZWKV
+#   Double-click in Finder                         — test any connected physical device
+#   zsh run_e2e_test.command RFCW70CZWKV           — assert a specific serial is selected
 
 [ -f ~/.zprofile ] && source ~/.zprofile 2>/dev/null
 [ -f ~/.zshrc ]   && source ~/.zshrc   2>/dev/null
