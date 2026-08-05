@@ -1,3 +1,5 @@
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2FCursorTouch%2FAndroid-MCP.svg)](https://mcptoplist.com/server/glama%2FCursorTouch%2FAndroid-MCP)
+
 <div align="center">
 
   <h1>🤖 Android MCP</h1>
