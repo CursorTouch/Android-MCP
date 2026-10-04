@@ -26,7 +26,8 @@
         "UV_NO_SYNC": "1",
         "ANDROID_MCP_DEVICE": "${user_config.device}",
         "ANDROID_MCP_CONNECTION": "${user_config.connection}",
-        "SCREENSHOT_QUANTIZED": "${user_config.screenshot_quantized}"
+        "SCREENSHOT_QUANTIZED": "${user_config.screenshot_quantized}",
+        "ANDROID_MCP_ADB_PATH": "${user_config.adb_path}"
       }
     }
   },
@@ -51,6 +52,13 @@
       "description": "Quantize screenshots to reduce token usage when sending images to the model. Slightly reduces image quality.",
       "required": false,
       "default": false
+    },
+    "adb_path": {
+      "type": "string",
+      "title": "adb Binary Path",
+      "description": "Full path to the adb executable. Leave blank to find adb on PATH, in the Android SDK (ANDROID_HOME, ANDROID_SDK_ROOT, or the default Android Studio SDK folder), or in the Homebrew bin folder.",
+      "required": false,
+      "default": ""
     }
   },
   "tools": [

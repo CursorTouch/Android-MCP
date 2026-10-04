@@ -50,6 +50,8 @@
 - ADB (Android Debug Bridge)
 - Android 10+ (Emulator/ Android Device)
 
+Android-MCP looks for `adb` on `PATH`, then in `<sdk>/platform-tools` under `ANDROID_HOME`, `ANDROID_SDK_ROOT` and the default Android Studio SDK folder (`~/Library/Android/sdk` on macOS, `~/Android/Sdk` on Linux, `%LOCALAPPDATA%\Android\Sdk` on Windows), then in `/opt/homebrew/bin` and `/usr/local/bin`. To use a specific binary, set `ANDROID_MCP_ADB_PATH` (or adbutils' `ADBUTILS_ADB_PATH`); an override that does not point at an executable is an error rather than a fallback. The path found is kept in the server process's `ADBUTILS_ADB_PATH` for the rest of its life, so restart the server after moving adb. This matters for desktop MCP hosts, which may give the server a different `PATH` from your terminal; the Claude Desktop extension exposes the override as the "adb Binary Path" setting.
+
 ### 📲 Testing ADB Connection
 
 Before running the server, ensure your Android device is connected and recognized by ADB:
