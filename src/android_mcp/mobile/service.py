@@ -1,4 +1,5 @@
 from android_mcp.mobile.views import MobileState
+from android_mcp.mobile.adb import adb_path, find_adb, publish
 from android_mcp.tree.service import Tree
 import uiautomator2 as u2
 from io import BytesIO
@@ -14,9 +15,13 @@ class Mobile:
 
     @staticmethod
     def _adb_devices_list() -> list[tuple[str, str]]:
-        result = subprocess.run(
-            ['adb', 'devices'], capture_output=True, text=True, timeout=10
-        )
+        adb = adb_path()
+        try:
+            result = subprocess.run(
+                [adb, 'devices'], capture_output=True, text=True, timeout=10
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError(f"adb at {adb} could not be launched: {exc}") from exc
         devices = []
         for line in result.stdout.strip().splitlines()[1:]:
             # adb devices uses tab separation but some builds use variable whitespace
@@ -29,8 +34,9 @@ class Mobile:
     def _connect_mdns_tls_peers() -> None:
         """Auto-connect any ADB-over-TLS peers visible via mDNS that aren't yet connected."""
         try:
+            adb = adb_path()
             mdns = subprocess.run(
-                ['adb', 'mdns', 'services'], capture_output=True, text=True, timeout=5
+                [adb, 'mdns', 'services'], capture_output=True, text=True, timeout=5
             )
             for line in mdns.stdout.splitlines()[1:]:
                 if '_adb-tls-connect' not in line:
@@ -40,7 +46,7 @@ class Mobile:
                 if len(parts) >= 3:
                     ip_port = parts[-1]
                     subprocess.run(
-                        ['adb', 'connect', ip_port],
+                        [adb, 'connect', ip_port],
                         capture_output=True, timeout=5
                     )
         except Exception:
@@ -55,19 +61,18 @@ class Mobile:
                 Mobile._connect_mdns_tls_peers()
                 devices = Mobile._adb_devices_list()
             return devices
-        except FileNotFoundError:
-            raise RuntimeError("adb not found. Ensure ADB is installed and on PATH.")
         except subprocess.TimeoutExpired:
             raise RuntimeError("adb devices timed out.")
 
     @staticmethod
     def adb_connect(serial: str) -> None:
+        adb = adb_path()
         try:
             result = subprocess.run(
-                ['adb', 'connect', serial], capture_output=True, text=True, timeout=15
+                [adb, 'connect', serial], capture_output=True, text=True, timeout=15
             )
-        except FileNotFoundError:
-            raise RuntimeError("adb not found. Ensure ADB is installed and on PATH.")
+        except FileNotFoundError as exc:
+            raise RuntimeError(f"adb at {adb} could not be launched: {exc}") from exc
         except subprocess.TimeoutExpired:
             raise RuntimeError(f"adb connect {serial} timed out.")
 
@@ -99,6 +104,15 @@ class Mobile:
 
     def connect(self, serial: str):
         try:
+            # uiautomator2 starts the adb server through adbutils. Hand it the adb we found
+            # so both run the same binary; when we found none, leave adbutils to its own
+            # fallbacks (a server that is already running, or its bundled adb on Windows).
+            adb = find_adb()
+            if adb:
+                publish(adb)
+            elif not os.environ.get("ADBUTILS_ADB_PATH", "").strip():
+                # adbutils would try to run a blank override verbatim.
+                os.environ.pop("ADBUTILS_ADB_PATH", None)
             self.device = u2.connect(serial)
             self.device.info
         except u2.ConnectError as e:
