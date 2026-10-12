@@ -285,7 +285,7 @@ def click_tool(x: int, y: int):
 
 
 @mcp.tool(name='ClickBySelector',description='Click on an element by selector (text, resourceId, className, description). More reliable than coordinate clicks — handles dynamic layouts and element reflow. At least one selector must be provided.',annotations=ToolAnnotations(title="Click By Selector",destructiveHint=True))
-def click_by_selector_tool(text:str=None,resourceId:str=None,className:str=None,description:str=None,index:int=0,timeout:float=5.0):
+def click_by_selector_tool(text:str | None=None,resourceId:str | None=None,className:str | None=None,description:str | None=None,index:int=0,timeout:float=5.0):
     device=require_device()
     kwargs={}
     if text: kwargs['text']=text
@@ -397,7 +397,7 @@ def wait_tool(duration: int):
 
 
 @mcp.tool(name='WaitForElement',description='Wait for an element to appear on screen. Use this instead of Wait when content is loading dynamically. Returns element info when found or error on timeout.',annotations=ToolAnnotations(title="Wait For Element",readOnlyHint=True))
-def wait_for_element_tool(text:str=None,resourceId:str=None,className:str=None,description:str=None,timeout:float=10.0):
+def wait_for_element_tool(text:str | None=None,resourceId:str | None=None,className:str | None=None,description:str | None=None,timeout:float=10.0):
     device=require_device()
     kwargs={}
     if text: kwargs['text']=text
