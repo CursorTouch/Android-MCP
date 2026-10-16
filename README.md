@@ -2,7 +2,7 @@
 
   <h1>🤖 Android MCP</h1>
 
-  <a href="https://github.com/CursorTouch/Android-MCP/blob/main/LICENSE">
+  <a href="https://github.com/CursorTouch/Android-MCP/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
   </a>
   <img src="https://img.shields.io/badge/python-3.13-blue" alt="Python">
@@ -222,19 +222,24 @@ For troubleshooting tips (log locations, common ADB issues), see the [MCP docs](
 
 ## 🛠️ Available Tools
 
-Claude can access the following tools to interact with Windows:
+Claude can access the following tools to interact with Android:
 
-- `State-Tool`: To understand the state of the device.
-- `Click-Tool`: Click on the screen at the given coordinates.
-- `Long-Click-Tool`: Perform long click on the screen at the given coordinates.
-- `Type-Tool`: Type text on the specified coordinates (optionally clears existing text).
-- `Swipe-Tool`: Perform swipe from one location to other.
-- `Drag-Tool`: Drag from one point to another.
-- `Press-Tool`: To press the keys on the mobile device (Back, Volume Up, ...etc).
-- `Wait-Tool`: Pause for a defined duration.
-- `State-Tool`: Combined snapshot of active apps and interactive UI elements.
-- `Notification-Tool`: To access the notifications seen on the device.
-- `Shell-Tool`: To execute shell commands on the android device.
+- `ListDevices`: List available ADB devices and their connection state.
+- `ConnectDevice`: Connect to an ADB device by serial number.
+- `Device`: List, connect, or disconnect devices.
+- `Snapshot`: Read interactive UI elements; optionally include a screenshot with `use_vision=True`.
+  Set `use_annotation=False` for a clean screenshot.
+- `Click`: Click on the screen at the given coordinates.
+- `ClickBySelector`: Click an element matching text, resource ID, class name, or description.
+- `LongClick`: Perform a long click at the given coordinates.
+- `Type`: Send text to the focused field (optionally clears existing text). Currently, `x` and `y`
+  are required but do not focus the field; call `Click` first.
+- `Swipe`: Swipe from one location to another.
+- `Drag`: Drag from one point to another.
+- `Press`: Press a device button (Back, Volume Up, etc.).
+- `Wait`: Pause for a defined duration.
+- `WaitForElement`: Wait for an element matching a selector and return its coordinates.
+- `Notification`: Open the notification bar.
 
 ## ⚙️ Environment Variables
 
@@ -250,7 +255,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING](CONTRIBUTING) for dev setup and PR guidelines.
+Contributions are welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) for dev setup and PR guidelines.
 
 Made with ❤️ by [CursorTouch](https://github.com/cursortouch), 
 
