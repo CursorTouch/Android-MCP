@@ -160,7 +160,7 @@ class Tree:
                 continue
             name = element_name(node)
             if name:
-                elements.append(Element(name, node.class_name, node.short_id, node.bounds, node))
+                elements.append(self.element_for(node, name))
         return elements
 
     def find(
@@ -247,3 +247,22 @@ class Tree:
             return None
 
         return dispatch(self.roots)
+
+    def is_tappable(self, node: Node) -> bool:
+        """Whether a tap at the centre of ``node`` is handled by it or by a part of it."""
+        target = self.tap_target(*node.bounds.center)
+        return target is not None and any(n is target for n in _subtree(node))
+
+    def element_for(self, node: Node, name: str | None = None) -> Element:
+        """Describe ``node`` as an :class:`Element`, named by its text unless ``name`` is given."""
+        name = name if name is not None else (element_name(node) or node.text or node.content_desc)
+        return Element(
+            name, node.class_name, node.short_id, node.bounds, node, tappable=self.is_tappable(node)
+        )
+
+
+def _subtree(node: Node) -> Iterator[Node]:
+    """``node`` and everything inside it."""
+    yield node
+    for child in node.children:
+        yield from _subtree(child)

@@ -87,6 +87,9 @@ class Element:
     Attributes:
         node: The tree node this was made from, when it came from a tree. It is left out of
             comparisons and of the repr, so two elements are equal when they look equal.
+        tappable: Whether a tap at the element's centre reaches the element (or a part of it).
+            False for a scrolling container, a selected tab, or something covered by another
+            view that handles taps: it is listed, but tapping its centre will not act on it.
     """
 
     name: str
@@ -94,6 +97,7 @@ class Element:
     resource_id: str
     bounds: Bounds
     node: Node | None = field(default=None, repr=False, compare=False)
+    tappable: bool = True
 
     @property
     def center(self) -> tuple[int, int]:

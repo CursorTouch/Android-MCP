@@ -347,7 +347,7 @@ class TestSnapshot:
 
         assert len(result.content) == 1
         lines = text_of(result).splitlines()
-        assert lines[0].split() == ["Label", "Name", "ResourceId", "Class", "Coordinates"]
+        assert lines[0].split() == ["Label", "Name", "ResourceId", "Class", "Coordinates", "Tap"]
         assert len(lines) == 16
         assert "Google search" in text_of(result)
         assert device.calls("screencap") == []
@@ -545,6 +545,28 @@ class TestSelectorTools:
 
         assert text_of(result) == "Clicked element 'Google search' at (540,2207)"
         assert device.calls("tap") == [((540, 2207), "emulator-5554")]
+
+    async def test_clicking_something_a_tap_cannot_reach_still_taps_but_warns(self, server, device):
+        """The scrolling workspace is not tappable: the tap is sent, with a note to check."""
+        result = await call(server, "ClickBySelector", {"resourceId": "workspace"})
+
+        assert device.calls("tap") == [((540, 1200), "emulator-5554")]
+        assert "Clicked element" in text_of(result)
+        assert "nothing at that point is marked as taking taps" in text_of(result)
+
+    async def test_clicking_a_tappable_element_has_no_warning(self, server, device):
+        """The usual case: a plain confirmation."""
+        result = await call(server, "ClickBySelector", {"resourceId": "search_container_hotseat"})
+
+        assert "Note" not in text_of(result)
+
+    async def test_snapshot_marks_the_workspace_as_not_tappable(self, server, device):
+        """The table's Tap column is ``no`` for it and ``yes`` for the icons."""
+        rows = text_of(await call(server, "Snapshot")).splitlines()[1:]
+
+        not_tappable = [row for row in rows if row.split()[-1] == "no"]
+        assert len(not_tappable) == 1 and " workspace " in not_tappable[0]
+        assert len(rows) == 15
 
     async def test_click_by_description(self, server, device):
         """Description is the content description."""

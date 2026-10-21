@@ -361,3 +361,71 @@ class TestOnRealDumps:
         workspace = next(e for e in tree.interactive_elements() if e.resource_id == "workspace")
 
         assert tree.tap_target(*workspace.center) is not workspace.node
+
+
+@pytest.mark.unit
+class TestTappable:
+    """Tests for Tree.is_tappable and the tappable flag on elements."""
+
+    def test_a_clickable_node_is_tappable(self):
+        """A tap at its centre reaches it."""
+        tree = _tree(_node(resource_id="ok", clickable="true", text="OK"))
+
+        (element,) = tree.interactive_elements()
+
+        assert element.tappable is True
+
+    def test_a_scrolling_container_is_listed_but_not_tappable(self):
+        """Listed because it scrolls; a tap on it does nothing."""
+        tree = _tree(_node(resource_id="list", scrollable="true", text="List"))
+
+        (element,) = tree.interactive_elements()
+
+        assert element.tappable is False
+
+    def test_an_element_covered_by_a_clickable_view_is_not_tappable(self):
+        """The covering view takes the tap, so the one underneath is not reached."""
+        tree = _tree(
+            _node(
+                children=[
+                    _node(resource_id="under", clickable="true", text="Under"),
+                    _node(resource_id="cover", clickable="true", text="Cover"),
+                ]
+            )
+        )
+
+        flags = {e.name: e.tappable for e in tree.interactive_elements()}
+
+        assert flags == {"Under": False, "Cover": True}
+
+    def test_a_part_of_the_element_taking_the_tap_still_counts(self):
+        """A focusable row whose own button sits at its centre is reached through that button."""
+        tree = _tree(
+            _node(
+                resource_id="row",
+                focusable="true",
+                text="Row",
+                children=[_node(resource_id="button", clickable="true")],
+            )
+        )
+
+        row = next(e for e in tree.interactive_elements() if e.resource_id == "row")
+
+        assert row.tappable is True
+
+    def test_element_for_names_a_node_from_its_children(self):
+        """find() returns nodes; element_for turns one into an element with its tappable flag."""
+        tree = _tree(_node(resource_id="row", clickable="true", children=[_node(text="Title")]))
+        (node,) = tree.find(resource_id="row")
+
+        element = tree.element_for(node)
+
+        assert (element.name, element.tappable, element.node) == ("Title", True, node)
+
+    def test_on_the_launcher_only_the_workspace_container_is_not_tappable(self):
+        """The real dump: every icon and button is tappable but the scrolling workspace."""
+        tree = Tree.from_xml((FIXTURES / "launcher.xml").read_text(encoding="utf-8"))
+
+        not_tappable = [e.resource_id for e in tree.interactive_elements() if not e.tappable]
+
+        assert not_tappable == ["workspace"]

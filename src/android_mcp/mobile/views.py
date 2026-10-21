@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from android_mcp.tree import Element
 
-_HEADERS = ("Label", "Name", "ResourceId", "Class", "Coordinates")
+_HEADERS = ("Label", "Name", "ResourceId", "Class", "Coordinates", "Tap")
 
 
 def format_elements(elements: list[Element]) -> str:
@@ -12,6 +12,8 @@ def format_elements(elements: list[Element]) -> str:
 
     The label is the element's index in ``elements``, which is also the number drawn on an
     annotated screenshot. Whitespace in a name is collapsed so that every element is one line.
+    The last column says whether a tap at the coordinates reaches the element: ``no`` marks a
+    scrolling container, a selected tab, or something covered by another view.
     """
     if not elements:
         return "No interactive elements."
@@ -22,6 +24,7 @@ def format_elements(elements: list[Element]) -> str:
             element.resource_id,
             element.class_name,
             "({},{})".format(*element.center),
+            "yes" if element.tappable else "no",
         )
         for label, element in enumerate(elements)
     ]

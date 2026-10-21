@@ -47,7 +47,13 @@ def register(mcp: FastMCP, session: Session) -> None:
                 timeout=timeout,
             )
         x, y = element.center
-        return f"Clicked element {element.name!r} at ({x},{y})"
+        message = f"Clicked element {element.name!r} at ({x},{y})"
+        if not element.tappable:
+            message += (
+                ". Note: nothing at that point is marked as taking taps, so it may have had no "
+                "effect; take a Snapshot to check."
+            )
+        return message
 
     mcp.tool(
         click_by_selector,

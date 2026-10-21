@@ -6,7 +6,7 @@ from time import monotonic, sleep
 from typing import Literal
 
 import android_mcp.adb as adb
-from android_mcp.tree import Element, Tree, element_name
+from android_mcp.tree import Element, Tree
 
 from .errors import ElementNotFoundError, MobileError
 from .screenshot import render
@@ -294,7 +294,8 @@ class Mobile:
         if index < 0:
             raise ValueError(f"index cannot be negative: {index}")
         serial = self._require()
-        matches = Tree.read(serial).find(
+        tree = Tree.read(serial)
+        matches = tree.find(
             text=text,
             resource_id=resource_id,
             class_name=class_name,
@@ -302,9 +303,7 @@ class Mobile:
         )
         if index >= len(matches):
             return None
-        node = matches[index]
-        name = element_name(node) or node.text or node.content_desc
-        return Element(name, node.class_name, node.short_id, node.bounds, node)
+        return tree.element_for(matches[index])
 
     def wait_for_element(
         self,
@@ -377,6 +376,10 @@ class Mobile:
 
         Finding the element when you act, instead of using coordinates from an earlier snapshot,
         keeps the tap right when the layout has moved since.
+
+        The tap is made even when the tree says nothing at that point takes taps, because a view
+        can handle touches through a listener without being flagged clickable. The returned
+        element's ``tappable`` says what the tree thought, so the caller can check the result.
 
         Returns:
             The element that was tapped.

@@ -386,8 +386,14 @@ class TestMobileState:
     """Tests for MobileState and format_elements."""
 
     @staticmethod
-    def _element(name, resource_id="", class_name="android.widget.Button", box=(0, 0, 100, 40)):
-        return Element(name, class_name, resource_id, Bounds(*box))
+    def _element(
+        name,
+        resource_id="",
+        class_name="android.widget.Button",
+        box=(0, 0, 100, 40),
+        tappable=True,
+    ):
+        return Element(name, class_name, resource_id, Bounds(*box), tappable=tappable)
 
     def test_no_elements(self):
         """An empty screen is said in words, not as a bare header."""
@@ -403,9 +409,26 @@ class TestMobileState:
         )
 
         header, first, second = text.splitlines()
-        assert header.split() == ["Label", "Name", "ResourceId", "Class", "Coordinates"]
-        assert first.split() == ["0", "OK", "ok_button", "android.widget.Button", "(200,300)"]
-        assert second.split() == ["1", "Cancel", "android.widget.Button", "(5,5)"]
+        assert header.split() == ["Label", "Name", "ResourceId", "Class", "Coordinates", "Tap"]
+        assert first.split() == [
+            "0",
+            "OK",
+            "ok_button",
+            "android.widget.Button",
+            "(200,300)",
+            "yes",
+        ]
+        assert second.split() == ["1", "Cancel", "android.widget.Button", "(5,5)", "yes"]
+
+    def test_the_tap_column_says_when_a_tap_would_not_reach_the_element(self):
+        """A scrolling container or covered element is marked ``no``, the rest ``yes``."""
+        text = format_elements(
+            [self._element("List", tappable=False), self._element("Save", tappable=True)]
+        )
+
+        _, first, second = text.splitlines()
+        assert first.split()[-1] == "no"
+        assert second.split()[-1] == "yes"
 
     def test_columns_line_up(self):
         """Every column starts at the same character on every line."""
