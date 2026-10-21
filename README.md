@@ -1,275 +1,103 @@
-<div align="center">
+# android-mcp-beta
 
-  <h1>🤖 Android MCP</h1>
+Clean-room reimplementation of [Android-MCP](https://github.com/CursorTouch/Android-MCP): an MCP
+server that lets an AI agent operate an Android device over ADB.
 
-  <a href="https://github.com/CursorTouch/Android-MCP/blob/master/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-  </a>
-  <img src="https://img.shields.io/badge/python-3.13-blue" alt="Python">
-  <img src="https://img.shields.io/badge/platform-Android%2010+-blue" alt="Platform">
-  <img src="https://img.shields.io/github/last-commit/CursorTouch/Android-MCP" alt="Last Commit">
-  <br>
-  <a href="https://x.com/CursorTouch">
-    <img src="https://img.shields.io/badge/follow-%40CursorTouch-1DA1F2?logo=twitter&style=flat" alt="Follow on Twitter">
-  </a>
-  <a href="https://discord.com/invite/Aue9Yj2VzS">
-    <img src="https://img.shields.io/badge/Join%20on-Discord-5865F2?logo=discord&logoColor=white&style=flat" alt="Join us on Discord">
-  </a>
+It needs only `adb`. Nothing is installed on the device, and there is no dependency on
+uiautomator2.
 
-</div>
+## Run
 
-<br>
+Requires Python 3.13 and `adb` (Android platform-tools).
 
-**Android-MCP** is a lightweight, open-source tool that bridge between AI agents and Android devices. Running as an MCP server, it lets LLM agents perform real-world tasks such as **app navigation, UI interaction and automated QA testing** without relying on traditional computer-vision pipelines or preprogramed scripts.
-
-<https://github.com/user-attachments/assets/cf9a5e4e-b69f-46d4-8487-0f61a7a86d67>
-
-## ✨ Features
-
-- **Native Android Integration**  
-  Interact with UI elements via ADB and the Android Accessibility API: launch apps, tap, swipe, input text, and read view hierarchies.
-
-- **Bring Your Own LLM/VLM**  
-  Works with any language model, no fine-tuned CV model or OCR pipeline required.
-
-- **Rich Toolset for Mobile Automation**  
-  Pre-built tools for gestures, keystrokes, capture, device state, shell commands execution.
-
-- **Real-Time Interaction**  
-  Typical latency between actions (e.g., two taps) ranges **2-4s** depending on device specs and load.
-
-### Supported Operating Systems
-
-- Android 10+
-
-## Installation
-
-### 📦 Prerequisites
-
-- Python 3.13
-- ADB (Android Debug Bridge)
-- Android 10+ (Emulator/ Android Device)
-
-Android-MCP looks for `adb` on `PATH`, then in `<sdk>/platform-tools` under `ANDROID_HOME`, `ANDROID_SDK_ROOT` and the default Android Studio SDK folder (`~/Library/Android/sdk` on macOS, `~/Android/Sdk` on Linux, `%LOCALAPPDATA%\Android\Sdk` on Windows), then in `/opt/homebrew/bin` and `/usr/local/bin`. To use a specific binary, set `ANDROID_MCP_ADB_PATH` (or adbutils' `ADBUTILS_ADB_PATH`); an override that does not point at an executable is an error rather than a fallback. The path found is kept in the server process's `ADBUTILS_ADB_PATH` for the rest of its life, so restart the server after moving adb. This matters for desktop MCP hosts, which may give the server a different `PATH` from your terminal; the Claude Desktop extension exposes the override as the "adb Binary Path" setting.
-
-### 📲 Testing ADB Connection
-
-Before running the server, ensure your Android device is connected and recognized by ADB:
-
-1. Connect your Android device via USB or ensure your emulator is running.
-2. Open a terminal and run:
-   ```shell
-   adb devices
-   ```
-3. You should see your device listed:
-   ```
-   List of devices attached
-   R38M30XXXXX   device
-   ```
-   The serial number will differ per device. Emulators show serials like `emulator-5554`.
-   If the list is empty or shows "unauthorized", check your USB debugging settings on the device.
-
-For WiFi ADB, connect the device first:
-
-```shell
-adb connect 192.168.1.3:5555
-adb devices
+```
+uv run android-mcp-beta
 ```
 
-### 🏁 Getting Started
-
-You can run the Android MCP server using **UVX** (recommended) or **UV** (for local development).
-
-#### Option 1: UVX (Recommended)
-
-No need to install dependencies manually. Just configure Claude Desktop:
-
-> **Windows note:** Use Python 3.13 for `uvx` on Windows. Python 3.14 currently fails to resolve a transitive `pywin32` dependency used by the MCP stack.
-
-1. **Locate your config file**
-   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-2. **Add the configuration**
-   ```json
-   {
-     "mcpServers": {
-       "android-mcp": {
-         "command": "uvx",
-         "args": [
-           "--python",
-           "3.13",
-           "android-mcp"
-         ]
-       }
-     }
-   }
-   ```
-   > **Note:** The server starts first and connects lazily when a tool runs. If no device is specified, it auto-detects connected devices and **prefers physical devices over emulators**. Use `--device <serial>` or the `ANDROID_MCP_DEVICE` environment variable to target a specific device.
-
-   Configure a specific WiFi device with environment variables:
-
-   ```json
-   {
-     "mcpServers": {
-       "android-mcp": {
-         "command": "uvx",
-         "args": [
-           "--python",
-           "3.13",
-           "android-mcp"
-         ],
-         "env": {
-           "ANDROID_MCP_CONNECTION": "wifi",
-           "ANDROID_MCP_HOST": "192.168.1.3"
-         }
-       }
-     }
-   }
-   ```
-
-   Or pass explicit flags:
-
-   ```json
-   {
-     "mcpServers": {
-       "android-mcp": {
-         "command": "uvx",
-         "args": [
-           "--python",
-           "3.13",
-           "android-mcp",
-           "--wifi",
-           "192.168.1.3"
-         ]
-       }
-     }
-   }
-   ```
-
-#### Option 2: UV Mode (Local Development)
-
-1. **Clone and Install**
-   ```shell
-   git clone https://github.com/CursorTouch/Android-MCP.git
-   cd Android-MCP
-   uv sync
-   ```
-
-2. **Configure Claude Desktop**
-   ```json
-   {
-     "mcpServers": {
-       "android-mcp": {
-         "command": "uv",
-         "args": [
-           "--directory",
-           "</PATH/TO/Android-MCP>",
-           "run",
-           "android-mcp"
-         ]
-       }
-     }
-   }
-   ```
-   > **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory. You can also add `"--device", "<YOUR_DEVICE_serial>"`, `"--wifi", "192.168.1.3"`, or `"--usb"` to control device selection.
-   > `uv sync` follows the repo's `.python-version`, so local development uses Python 3.13 by default.
-
-#### Option 3: OpenCode
-
-You can also use Android-MCP with [OpenCode](https://opencode.ai). After cloning and installing the repo (see Option 2), add the server as a local MCP in your OpenCode config (`opencode.json`):
+The server speaks MCP on stdio. In a client's config:
 
 ```json
 {
-  "mcp": {
-    "android-mcp": {
-      "type": "local",
-      "command": ["uv", "--directory", "</PATH/TO/Android-MCP>", "run", "android-mcp"]
+  "mcpServers": {
+    "android-mcp-beta": {
+      "command": "uv",
+      "args": ["--directory", "D:/Projects/android-mcp-beta", "run", "android-mcp-beta"]
     }
   }
 }
 ```
 
-> **Note:** Replace `</PATH/TO/Android-MCP>` with the full path to your cloned directory. As with UV mode, you can append `"--device"`, `"--wifi"`, `"--usb"`, etc. to the `command` array to control device selection.
+The device is connected on the first tool call, so the server starts whether or not one is
+attached yet.
 
-### 🔌 Device Selection
+## Choosing the device
 
-Android-MCP resolves devices lazily when a tool is called, so the MCP server can start even if no device is available yet.
+With no options it uses the first physical device, or an emulator when there is none.
 
-- `--device RFCN2013V8D`: connect to a specific USB serial
-- `--device 192.168.1.3:5555`: connect to a specific WiFi ADB target
-- `--wifi 192.168.1.3`: use WiFi and auto-append port `5555`
-- `--usb`: auto-detect the first USB-connected device
-- `--usb RFCN2013V8D`: use a specific USB device
-- `--connection wifi`: prefer the first available WiFi ADB device
-- `--connection usb`: prefer the first available USB device
+| Option | Environment | Meaning |
+|---|---|---|
+| `--device SERIAL` | `ANDROID_MCP_DEVICE` | A serial, or `host:port` for a device on the network |
+| `--connection auto\|usb\|wifi` (alias `--transport`) | `ANDROID_MCP_CONNECTION` | How to pick when no device is named |
+| `--wifi [HOST]` | `ANDROID_MCP_HOST` | ADB over Wi-Fi; `HOST` or `HOST:PORT`, port 5555 by default |
+| `--usb [SERIAL]` | | ADB over USB, optionally a specific serial |
 
-Supported environment variables:
+Options win over the environment. Other variables:
 
-- `ANDROID_MCP_DEVICE`: explicit serial or `host:port`
-- `ANDROID_MCP_CONNECTION`: `auto`, `usb`, or `wifi`
-- `ANDROID_MCP_HOST`: WiFi host, with `:5555` added automatically when omitted
+- `ANDROID_MCP_ADB_PATH` names the `adb` binary. Otherwise `adb` is looked for on `PATH`, then in
+  `ANDROID_HOME`, `ANDROID_SDK_ROOT` and the default Android Studio SDK folders.
+- `SCREENSHOT_QUANTIZED=true` reduces screenshots to 256 colours, which makes them smaller.
 
-If nothing is configured, Android-MCP will use the first available ADB device reported by `adb devices`. If none are available, tool calls return a configuration error instead of crashing the MCP handshake.
+## Tools
 
-3. **Restart the Claude Desktop**
+| Tool | Does |
+|---|---|
+| `ListDevices`, `ConnectDevice`, `Device` | List, choose, or disconnect the device |
+| `Snapshot` | The interactive elements, each with a label and tap coordinates. `use_vision` adds a screenshot with the labels drawn on it; `use_annotation=false` leaves it clean |
+| `Click`, `LongClick`, `Swipe`, `Drag` | Touch input by coordinates |
+| `ClickBySelector` | Tap an element found by `text`, `resourceId`, `className` or `description` (exact match; `resourceId` may be the part after the slash), with `index` for the nth match |
+| `Type` | Type into a field. `x` and `y` tap it first; `clear` empties it first. Other scripts and emoji need the optional ADBKeyboard app (below) |
+| `Press` | A button: back, home, recent, volume up, enter, and so on |
+| `Notification` | Pull down the notification shade |
+| `Wait`, `WaitForElement` | Pause, or wait for an element to appear |
 
-Restart your Claude Desktop. You should see "android-mcp" listed as an available integration. That's it, now you're ready to start controlling your Android device with natural language.
+## Typing other scripts (optional)
 
-For troubleshooting tips (log locations, common ADB issues), see the [MCP docs](https://modelcontextprotocol.io/quickstart/server#android-mcp-integration-issues).
+`Type` uses `adb shell input text`, so on its own it types printable ASCII and the accented Latin
+letters Android can compose (é ñ ü ÿ and 107 others, not ç ß å ø). A newline presses Enter and a
+tab presses Tab. For anything else (CJK, Cyrillic, Arabic, emoji, ç), install the
+[ADBKeyboard](https://github.com/senzhk/ADBKeyBoard) app on the device once:
 
----
-
-## 🛠️ Available Tools
-
-Claude can access the following tools to interact with Android:
-
-- `ListDevices`: List available ADB devices and their connection state.
-- `ConnectDevice`: Connect to an ADB device by serial number.
-- `Device`: List, connect, or disconnect devices.
-- `Snapshot`: Read interactive UI elements; optionally include a screenshot with `use_vision=True`.
-  Set `use_annotation=False` for a clean screenshot.
-- `Click`: Click on the screen at the given coordinates.
-- `ClickBySelector`: Click an element matching text, resource ID, class name, or description.
-- `LongClick`: Perform a long click at the given coordinates.
-- `Type`: Send text to the focused field (optionally clears existing text). Currently, `x` and `y`
-  are required but do not focus the field; call `Click` first.
-- `Swipe`: Swipe from one location to another.
-- `Drag`: Drag from one point to another.
-- `Press`: Press a device button (Back, Volume Up, etc.).
-- `Wait`: Pause for a defined duration.
-- `WaitForElement`: Wait for an element matching a selector and return its coordinates.
-- `Notification`: Open the notification bar.
-
-## ⚙️ Environment Variables
-
-- `SCREENSHOT_QUANTIZED`: Set to `true` to quantize the screenshot to reduce input tokens.
-
-## ⚠️ Caution
-
-Android-MCP can execute arbitrary UI actions on your mobile device. Use it in controlled environments (emulators, test devices) when running untrusted prompts or agents.
-
-## 🪪 License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING](CONTRIBUTING.md) for dev setup and PR guidelines.
-
-Made with ❤️ by [CursorTouch](https://github.com/cursortouch), 
-
-developers: [Jeomon George](https://github.com/jeomon), [Muhammad Yaseen](https://github.com/mhmdyaseen)
-
-## Citation
-
-```bibtex
-@misc{
-  author       = {cursortouch},
-  title        = {Android-MCP},
-  year         = {2025},
-  publisher    = {GitHub},
-  howpublished = {\url{https://github.com/CursorTouch/Android-MCP}},
-  note         = {Lightweight open-source bridge between LLM agents and Android},
-}
 ```
+adb install keyboardservice-debug.apk
+```
+
+Download it from the [releases page](https://github.com/senzhk/ADBKeyBoard/releases). This project
+does not bundle it: ADBKeyboard is GPL-2.0, and it is only ever talked to over broadcasts. I tested
+v2.5-dev (SHA-256 `41a8a099…46fbbb`) on Android 15.
+
+With it installed, text that `input text` cannot type is sent through it automatically. For about
+a second the device's keyboard is switched to ADBKeyboard, which shows no keyboard of its own, and
+then the keyboard that was active before is put back (and ADBKeyboard is disabled again if it was
+not enabled). A text field must be focused, or the call fails with an error saying so. If a crash
+ever leaves the device on ADBKeyboard, `adb shell ime reset` restores the default. Without the app,
+such text is rejected before anything is sent, with these instructions in the error.
+
+## Other limits
+
+- **Busy screens.** The element list comes from `uiautomator dump`, which gives up when the screen
+  never goes idle (a video, a running timer). `Snapshot` with `use_vision` then returns the
+  screenshot alone and says so; click by coordinates still works.
+- **Drag** needs Android 8 or later. **Clearing a field** uses `input keycombination`, which needs
+  Android 12; older devices fall back to a slower method that clears up to 200 characters.
+
+## Development
+
+```
+uv sync
+uv run pytest
+uv run ruff check . && uv run ruff format --check .
+```
+
+The tests need no device. Layers, bottom to top: `android_mcp.adb` (talks to `adb`),
+`android_mcp.tree` (reads the screen), `android_mcp.mobile` (one connected device: state and
+actions), `android_mcp.server` (the MCP tools and the choice of device).

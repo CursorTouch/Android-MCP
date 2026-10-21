@@ -1,36 +1,89 @@
-from dataclasses import dataclass
-from tabulate import tabulate
+"""Data types for the UI tree: what ``uiautomator dump`` reports, and what survives filtering."""
 
-@dataclass
-class ElementNode:
+import re
+from dataclasses import dataclass
+
+_BOUNDS = re.compile(r"\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]")
+
+
+@dataclass(frozen=True)
+class Bounds:
+    """A screen rectangle in pixels, as uiautomator writes it: ``[left,top][right,bottom]``."""
+
+    left: int
+    top: int
+    right: int
+    bottom: int
+
+    @classmethod
+    def parse(cls, text: str) -> "Bounds":
+        """Read uiautomator's ``bounds`` attribute.
+
+        Raises:
+            ValueError: if ``text`` is not of the form ``[left,top][right,bottom]``.
+        """
+        match = _BOUNDS.fullmatch(text.strip())
+        if match is None:
+            raise ValueError(f"not a bounds string: {text!r}")
+        return cls(*map(int, match.groups()))
+
+    @property
+    def width(self) -> int:
+        return self.right - self.left
+
+    @property
+    def height(self) -> int:
+        return self.bottom - self.top
+
+    @property
+    def is_empty(self) -> bool:
+        """True when nothing can be tapped inside: no width or no height."""
+        return self.width <= 0 or self.height <= 0
+
+    @property
+    def center(self) -> tuple[int, int]:
+        """The ``(x, y)`` pixel to tap to hit this rectangle."""
+        return (self.left + self.right) // 2, (self.top + self.bottom) // 2
+
+
+@dataclass(frozen=True)
+class Node:
+    """One ``<node>`` of the dump, with its children."""
+
+    class_name: str
+    bounds: Bounds
+    package: str = ""
+    resource_id: str = ""
+    text: str = ""
+    content_desc: str = ""
+    hint: str = ""
+    clickable: bool = False
+    long_clickable: bool = False
+    checkable: bool = False
+    checked: bool = False
+    enabled: bool = True
+    focusable: bool = False
+    focused: bool = False
+    scrollable: bool = False
+    selected: bool = False
+    password: bool = False
+    children: tuple["Node", ...] = ()
+
+    @property
+    def short_id(self) -> str:
+        """The resource id without its package: ``workspace`` for ``x.launcher:id/workspace``."""
+        return self.resource_id.rpartition("/")[2]
+
+
+@dataclass(frozen=True)
+class Element:
+    """An interactive thing on screen that a caller can name and tap."""
+
     name: str
     class_name: str
-    coordinates: 'CenterCord'
-    bounding_box: 'BoundingBox'
-    resource_id: str = ''
+    resource_id: str
+    bounds: Bounds
 
-@dataclass
-class BoundingBox:
-    x1:int
-    y1:int
-    x2:int
-    y2:int
-
-    def to_string(self):
-        return f'[{self.x1},{self.y1}][{self.x2},{self.y2}]'
-
-@dataclass
-class TreeState:
-    interactive_elements:list[ElementNode]
-
-    def to_string(self):
-        data = [[index, node.name, node.resource_id, node.class_name, node.coordinates.to_string()] for index, node in enumerate(self.interactive_elements)]
-        return tabulate(data, headers=["Label", "Name", "ResourceId", "Class", "Coordinates"], tablefmt="plain")
-    
-@dataclass
-class CenterCord:
-    x: int
-    y: int
-
-    def to_string(self):
-        return f'({self.x},{self.y})'
+    @property
+    def center(self) -> tuple[int, int]:
+        return self.bounds.center
