@@ -6,14 +6,18 @@ from time import monotonic, sleep
 from typing import Literal
 
 import android_mcp.adb as adb
-import android_mcp.tree as tree
-from android_mcp.tree import Element
+from android_mcp.tree import Element, Tree, element_name
 
 from .errors import ElementNotFoundError, MobileError
 from .screenshot import render
 from .views import MobileState
 
 Connection = Literal["auto", "usb", "wifi"]
+
+
+def _read_elements(serial: str) -> list[Element]:
+    """The interactive elements on the screen of ``serial`` now."""
+    return Tree.read(serial).interactive_elements()
 
 
 def _is_emulator(device: adb.Device) -> bool:
@@ -179,10 +183,10 @@ class Mobile:
         """
         serial = self._require()
         if not use_vision:
-            return MobileState(elements=tree.get_elements(serial=serial))
+            return MobileState(elements=_read_elements(serial))
 
         with ThreadPoolExecutor(max_workers=2) as pool:
-            elements_future = pool.submit(tree.get_elements, serial=serial)
+            elements_future = pool.submit(_read_elements, serial)
             screenshot_future = pool.submit(adb.screencap, serial=serial)
             png = screenshot_future.result()
             try:
@@ -274,7 +278,7 @@ class Mobile:
     ) -> Element | None:
         """Look for an element on the screen now.
 
-        The criteria are those of :func:`android_mcp.tree.find_nodes`; every one given must match.
+        The criteria are those of :meth:`android_mcp.tree.Tree.find`; every one given must match.
 
         Args:
             index: Which match to return when several match, counting from 0 in screen order.
@@ -290,9 +294,7 @@ class Mobile:
         if index < 0:
             raise ValueError(f"index cannot be negative: {index}")
         serial = self._require()
-        roots = tree.parse_hierarchy(adb.dump_hierarchy(serial=serial))
-        matches = tree.find_nodes(
-            roots,
+        matches = Tree.read(serial).find(
             text=text,
             resource_id=resource_id,
             class_name=class_name,
@@ -301,8 +303,8 @@ class Mobile:
         if index >= len(matches):
             return None
         node = matches[index]
-        name = tree.element_name(node) or node.text or node.content_desc
-        return Element(name, node.class_name, node.short_id, node.bounds)
+        name = element_name(node) or node.text or node.content_desc
+        return Element(name, node.class_name, node.short_id, node.bounds, node)
 
     def wait_for_element(
         self,
@@ -337,7 +339,7 @@ class Mobile:
         }
         # With no windows to search this only validates the criteria, so a bad call fails now
         # instead of after the first slow read.
-        tree.find_nodes([], **criteria)
+        Tree().find(**criteria)
         self._require()
 
         deadline = monotonic() + timeout

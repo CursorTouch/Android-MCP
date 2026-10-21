@@ -1,7 +1,7 @@
 """Data types for the UI tree: what ``uiautomator dump`` reports, and what survives filtering."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 _BOUNDS = re.compile(r"\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]")
 
@@ -45,6 +45,11 @@ class Bounds:
         """The ``(x, y)`` pixel to tap to hit this rectangle."""
         return (self.left + self.right) // 2, (self.top + self.bottom) // 2
 
+    def contains(self, x: int, y: int) -> bool:
+        """Whether pixel ``(x, y)`` is inside. The right and bottom edges are outside, as pixels
+        are numbered from 0: a view ``[0,0][100,100]`` covers pixels 0 to 99."""
+        return self.left <= x < self.right and self.top <= y < self.bottom
+
 
 @dataclass(frozen=True)
 class Node:
@@ -77,12 +82,18 @@ class Node:
 
 @dataclass(frozen=True)
 class Element:
-    """An interactive thing on screen that a caller can name and tap."""
+    """An interactive thing on screen that a caller can name and tap.
+
+    Attributes:
+        node: The tree node this was made from, when it came from a tree. It is left out of
+            comparisons and of the repr, so two elements are equal when they look equal.
+    """
 
     name: str
     class_name: str
     resource_id: str
     bounds: Bounds
+    node: Node | None = field(default=None, repr=False, compare=False)
 
     @property
     def center(self) -> tuple[int, int]:

@@ -1,30 +1,23 @@
 """UI tree: reads the screen through :mod:`android_mcp.adb` and finds what can be tapped.
 
 Usage:
-    import android_mcp.tree as tree
+    from android_mcp.tree import Tree
 
-    for element in tree.get_elements():
+    tree = Tree.read()
+    for element in tree.interactive_elements():
         print(element.name, element.center)
+    node = tree.tap_target(540, 1200)  # what a tap there would reach
 """
 
-from .service import (
-    element_name,
-    find_nodes,
-    get_elements,
-    interactive_elements,
-    is_interactive,
-    parse_hierarchy,
-)
+from .service import Tree, element_name, is_interactive, takes_taps
 from .views import Bounds, Element, Node
 
 __all__ = [
     "Bounds",
     "Element",
     "Node",
+    "Tree",
     "element_name",
-    "find_nodes",
-    "get_elements",
-    "interactive_elements",
     "is_interactive",
-    "parse_hierarchy",
+    "takes_taps",
 ]

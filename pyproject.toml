@@ -52,4 +52,5 @@ addopts = "--strict-markers"
 asyncio_mode = "auto"
 markers = [
     "unit: unit tests, no device needed",
+    "live: drives a real device or emulator; skipped unless ANDROID_MCP_LIVE=1",
 ]

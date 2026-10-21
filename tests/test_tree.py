@@ -13,6 +13,19 @@ from android_mcp.tree.config import INTERACTIVE_CLASSES
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
 
+def _roots(xml):
+    """The root nodes of the tree dumped in ``xml``."""
+    return list(tree.Tree.from_xml(xml).roots)
+
+
+def _elements_of(roots):
+    return tree.Tree(roots).interactive_elements()
+
+
+def _find_nodes(roots, **criteria):
+    return tree.Tree(roots).find(**criteria)
+
+
 def _node(class_name="android.view.View", bounds="[0,0][100,100]", children=(), **attributes):
     """Write one ``<node>``. Keyword names use underscores: ``content_desc`` is content-desc."""
     attributes = {"class": class_name, "bounds": bounds} | {
@@ -29,7 +42,7 @@ def _hierarchy(*nodes):
 
 
 def _elements(*nodes):
-    return tree.interactive_elements(tree.parse_hierarchy(_hierarchy(*nodes)))
+    return _elements_of(_roots(_hierarchy(*nodes)))
 
 
 def _named(*nodes):
@@ -78,7 +91,7 @@ class TestBounds:
 
 @pytest.mark.unit
 class TestParseHierarchy:
-    """Tests for parse_hierarchy."""
+    """Tests for Tree.from_xml."""
 
     def test_reads_attributes(self):
         """Text, ids, class, package, bounds and every flag come through."""
@@ -104,7 +117,7 @@ class TestParseHierarchy:
             )
         )
 
-        (node,) = tree.parse_hierarchy(xml)
+        (node,) = _roots(xml)
 
         assert node == Node(
             class_name="android.widget.Button",
@@ -128,7 +141,7 @@ class TestParseHierarchy:
 
     def test_missing_attributes_take_defaults(self):
         """A bare node is enabled and nothing else."""
-        (node,) = tree.parse_hierarchy(_hierarchy(_node()))
+        (node,) = _roots(_hierarchy(_node()))
 
         assert node.enabled is True
         assert not any(
@@ -138,7 +151,7 @@ class TestParseHierarchy:
 
     def test_one_root_per_window(self):
         """Several windows on screen give several roots, in order."""
-        roots = tree.parse_hierarchy(_hierarchy(_node(text="a"), _node(text="b")))
+        roots = _roots(_hierarchy(_node(text="a"), _node(text="b")))
 
         assert [root.text for root in roots] == ["a", "b"]
 
@@ -151,20 +164,18 @@ class TestParseHierarchy:
             )
         )
 
-        (root,) = tree.parse_hierarchy(xml)
+        (root,) = _roots(xml)
 
         assert [child.text for child in root.children] == ["a", "b"]
         assert [child.text for child in root.children[0].children] == ["a1"]
 
     def test_empty_hierarchy(self):
         """A screen with no windows has no roots."""
-        assert tree.parse_hierarchy(_hierarchy()) == []
+        assert _roots(_hierarchy()) == []
 
     def test_attribute_text_is_unescaped(self):
         """XML entities in text and descriptions are decoded."""
-        (node,) = tree.parse_hierarchy(
-            _hierarchy(_node(text="Fish & Chips <3", content_desc='"q"'))
-        )
+        (node,) = _roots(_hierarchy(_node(text="Fish & Chips <3", content_desc='"q"')))
 
         assert (node.text, node.content_desc) == ("Fish & Chips <3", '"q"')
 
@@ -179,19 +190,19 @@ class TestParseHierarchy:
     )
     def test_short_id(self, resource_id, short):
         """The package prefix is dropped from a resource id."""
-        (node,) = tree.parse_hierarchy(_hierarchy(_node(resource_id=resource_id)))
+        (node,) = _roots(_hierarchy(_node(resource_id=resource_id)))
 
         assert node.short_id == short
 
     def test_malformed_xml_raises(self):
         """Text that is not XML raises the parser's error."""
         with pytest.raises(ParseError):
-            tree.parse_hierarchy("<hierarchy><node")
+            _roots("<hierarchy><node")
 
     def test_bad_bounds_raises(self):
         """A node whose bounds cannot be read raises instead of being guessed at."""
         with pytest.raises(ValueError, match="not a bounds string"):
-            tree.parse_hierarchy(_hierarchy(_node(bounds="nope")))
+            _roots(_hierarchy(_node(bounds="nope")))
 
 
 @pytest.mark.unit
@@ -200,7 +211,7 @@ class TestIsInteractive:
 
     @staticmethod
     def _make(**flags):
-        return tree.parse_hierarchy(_hierarchy(_node(**flags)))[0]
+        return _roots(_hierarchy(_node(**flags)))[0]
 
     @pytest.mark.parametrize(
         "flag",
@@ -238,7 +249,7 @@ class TestElementName:
 
     @staticmethod
     def _name(*nodes):
-        return tree.element_name(tree.parse_hierarchy(_hierarchy(*nodes))[0])
+        return tree.element_name(_roots(_hierarchy(*nodes))[0])
 
     def test_content_description_wins_over_text(self):
         """A content description is what accessibility reads out, so it comes first."""
@@ -379,11 +390,11 @@ class TestInteractiveElements:
 
 @pytest.mark.unit
 class TestFindNodes:
-    """Tests for find_nodes."""
+    """Tests for Tree.find."""
 
     @staticmethod
     def _find(*nodes, **criteria):
-        return tree.find_nodes(tree.parse_hierarchy(_hierarchy(*nodes)), **criteria)
+        return _find_nodes(_roots(_hierarchy(*nodes)), **criteria)
 
     def test_no_criteria_is_an_error(self):
         """Matching everything is never what a caller meant."""
@@ -496,11 +507,11 @@ class TestFindNodes:
     def test_on_a_real_dump(self):
         """Selectors find what the launcher dump contains."""
         xml = (FIXTURES / "launcher.xml").read_text(encoding="utf-8")
-        roots = tree.parse_hierarchy(xml)
+        roots = _roots(xml)
 
-        by_id = tree.find_nodes(roots, resource_id="search_container_hotseat")
-        by_desc = tree.find_nodes(roots, description="Voice search")
-        by_text = tree.find_nodes(roots, text="Gmail", class_name="android.widget.TextView")
+        by_id = _find_nodes(roots, resource_id="search_container_hotseat")
+        by_desc = _find_nodes(roots, description="Voice search")
+        by_text = _find_nodes(roots, text="Gmail", class_name="android.widget.TextView")
 
         assert [n.bounds.center for n in by_id] == [(540, 2207)]
         assert [n.bounds.center for n in by_desc] == [(790, 2207)]
@@ -574,7 +585,7 @@ class TestRealDumps:
         """The same elements come out, with the same names, ids and tap points."""
         xml = (FIXTURES / fixture).read_text(encoding="utf-8")
 
-        elements = tree.interactive_elements(tree.parse_hierarchy(xml))
+        elements = _elements_of(_roots(xml))
 
         assert _summary(elements) == expected
 
@@ -582,7 +593,7 @@ class TestRealDumps:
         """Each tap point lies inside its element's bounds, on a 1080x2400 screen."""
         xml = (FIXTURES / "contacts_form.xml").read_text(encoding="utf-8")
 
-        for element in tree.interactive_elements(tree.parse_hierarchy(xml)):
+        for element in _elements_of(_roots(xml)):
             x, y = element.center
             assert element.bounds.left <= x <= element.bounds.right
             assert element.bounds.top <= y <= element.bounds.bottom
@@ -591,7 +602,7 @@ class TestRealDumps:
 
 @pytest.mark.unit
 class TestGetElements:
-    """Tests for get_elements."""
+    """Tests for Tree.read."""
 
     def test_reads_the_device_and_returns_its_elements(self, monkeypatch):
         """The dump comes from the adb layer, for the device asked about."""
@@ -603,7 +614,7 @@ class TestGetElements:
 
         monkeypatch.setattr(tree.service.adb, "dump_hierarchy", fake_dump)
 
-        elements = tree.get_elements(serial="emulator-5554")
+        elements = tree.Tree.read("emulator-5554").interactive_elements()
 
         assert seen["serial"] == "emulator-5554"
         assert _summary(elements) == LAUNCHER
