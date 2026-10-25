@@ -51,7 +51,9 @@ def clear_text(*, serial: str | None = None) -> None:
     200 times each instead. That is slow (about three seconds) and leaves whatever is longer than
     200 characters.
     """
-    output = shell(f"input keycombination {_CTRL_LEFT} {_KEY_A}", serial=serial)
+    # Before Android 12 ``input`` prints "Unknown command" to stderr and still exits 0, and adb
+    # keeps stderr apart from stdout, so merge the two or the answer is never seen.
+    output = shell(f"input keycombination {_CTRL_LEFT} {_KEY_A} 2>&1", serial=serial)
     if "Unknown command" not in output:
         press_key(KeyCode.DELETE, serial=serial)
         return
