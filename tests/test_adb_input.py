@@ -383,7 +383,7 @@ class TestClearText:
         adb.clear_text(serial="emulator-5554")
 
         assert shell_calls == [
-            ("input keycombination 113 29", "emulator-5554"),
+            ("input keycombination 113 29 2>&1", "emulator-5554"),
             ("input keyevent 67", "emulator-5554"),
         ]
 
@@ -394,18 +394,24 @@ class TestClearText:
         assert [serial for _, serial in shell_calls] == [None, None]
 
     def test_old_devices_fall_back_to_repeated_deletes(self, monkeypatch):
-        """Before Android 12 ``input`` answers "Unknown command"; clear by deleting both ways."""
+        """Before Android 12 ``input`` answers "Unknown command"; clear by deleting both ways.
+
+        It writes that to stderr and exits 0, and ``shell`` returns only stdout, so the answer
+        is seen only when the command merges stderr into stdout itself.
+        """
         calls = []
 
         def old_device(command, *, serial=None, timeout=30):
             calls.append(command)
-            return "Unknown command: keycombination\n" if "keycombination" in command else ""
+            if "keycombination" in command and command.endswith(" 2>&1"):
+                return "Error: Unknown command: keycombination\n"
+            return ""
 
         monkeypatch.setattr(input, "shell", old_device)
 
         adb.clear_text()
 
-        assert calls[0] == "input keycombination 113 29"
+        assert calls[0] == "input keycombination 113 29 2>&1"
         keys = calls[1].removeprefix("input keyevent ").split()
         assert keys == ["67", "112"] * 200
         assert len(calls) == 2
