@@ -461,3 +461,11 @@ class TestScreencap:
         assert adb.screencap(serial="emulator-5554") == png
         assert seen["args"] == ("exec-out", "screencap", "-p")
         assert seen["kwargs"]["serial"] == "emulator-5554"
+
+    def test_drops_multiple_displays_warning(self, monkeypatch):
+        """Foldables print a warning line before the PNG; only the PNG comes back."""
+        png = b"\x89PNG\r\n\x1a\n\x00\xff"
+        warning = b"[Warning] Multiple displays were found, but no display id was specified!\n"
+        monkeypatch.setattr(core, "run_bytes", lambda *args, **kwargs: warning + png)
+
+        assert adb.screencap(serial="emulator-5554") == png
