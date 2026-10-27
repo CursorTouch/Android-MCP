@@ -210,7 +210,9 @@ def screencap(*, serial: str | None = None, timeout: float = 30) -> bytes:
     """Capture the device's screen.
 
     Uses ``exec-out`` rather than ``shell`` because ``shell`` can rewrite line endings inside
-    binary output and corrupt the PNG.
+    binary output and corrupt the PNG. On devices with several displays (foldables), screencap
+    prints a "[Warning] Multiple displays..." line before the PNG, so anything ahead of the PNG
+    signature is dropped.
 
     Returns:
         The screenshot as PNG bytes.
@@ -219,7 +221,9 @@ def screencap(*, serial: str | None = None, timeout: float = 30) -> bytes:
         AdbNotFoundError: if adb cannot be located.
         AdbCommandError: if the capture fails or the timeout passes.
     """
-    return run_bytes("exec-out", "screencap", "-p", serial=serial, timeout=timeout)
+    output = run_bytes("exec-out", "screencap", "-p", serial=serial, timeout=timeout)
+    start = output.find(b"\x89PNG\r\n\x1a\n")
+    return output[start:] if start > 0 else output
 
 
 def dump_hierarchy(*, serial: str | None = None, timeout: float = 30) -> str:
