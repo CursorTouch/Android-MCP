@@ -25,6 +25,8 @@ FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 EMULATOR = adb.Device("emulator-5554", adb.DeviceState.DEVICE, "sdk_gphone64")
 PHONE = adb.Device("R5CT30ABCDE", adb.DeviceState.DEVICE, "SM_G973F")
 WIFI = adb.Device("192.168.1.3:5555", adb.DeviceState.DEVICE, "Pixel_8")
+# A phone paired for wireless debugging, which adb connected to by itself over mDNS.
+MDNS = adb.Device("adb-RF8M12345-AbC9Zz._adb-tls-connect._tcp", adb.DeviceState.DEVICE, "A065")
 
 
 def _device(serial, state):
@@ -111,6 +113,15 @@ class TestPickDevice:
         """``usb`` ignores emulators and network devices."""
         assert pick_device([EMULATOR, WIFI, PHONE], "usb") is PHONE
         assert pick_device([EMULATOR, WIFI], "usb") is None
+
+    def test_wifi_takes_a_device_adb_connected_over_mdns(self):
+        """A wireless-debugging serial from mDNS has no colon but is still a network device."""
+        assert pick_device([PHONE, MDNS], "wifi") is MDNS
+
+    def test_usb_ignores_a_device_adb_connected_over_mdns(self):
+        """``usb`` does not take a wireless phone just because its serial has no colon."""
+        assert pick_device([MDNS, PHONE], "usb") is PHONE
+        assert pick_device([MDNS], "usb") is None
 
 
 @pytest.mark.unit

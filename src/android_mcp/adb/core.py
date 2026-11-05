@@ -5,6 +5,7 @@ and the UI hierarchy dump. Touch, key and text input are in :mod:`.input`.
 """
 
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -151,6 +152,15 @@ def run_bytes(*args: str, serial: str | None = None, timeout: float = 30) -> byt
     return _execute(args, serial, timeout)
 
 
+# A line of ``adb devices -l``: the serial, then one word of state, then ``key:value`` details.
+# The state is found rather than taken as the second field, because a serial adb gets from mDNS
+# can contain a space, as in ``adb-R5CT30ABCDE-xYz1Qa (2)._adb-tls-connect._tcp``.
+_DEVICE_LINE = re.compile(
+    rf"(?P<serial>\S.*?)\s+(?P<state>{'|'.join(state.value for state in DeviceState)})(?=\s|$)"
+    r"(?P<details>.*)"
+)
+
+
 @dataclass(frozen=True)
 class Device:
     """One line of ``adb devices -l``.
@@ -183,8 +193,13 @@ def list_devices() -> list[Device]:
         # Skips the header, blank lines, and the "* daemon started" notices adb prints.
         if len(fields) < 2 or line.startswith(("*", "List of devices")):
             continue
-        details = dict(field.split(":", 1) for field in fields[2:] if ":" in field)
-        devices.append(Device(fields[0], DeviceState(fields[1]), details.get("model")))
+        match = _DEVICE_LINE.match(line.strip())
+        if match is None:  # a state that is not one word, such as "no permissions (...)"
+            serial, state, rest = fields[0], fields[1], fields[2:]
+        else:
+            serial, state, rest = match["serial"], match["state"], match["details"].split()
+        details = dict(field.split(":", 1) for field in rest if ":" in field)
+        devices.append(Device(serial, DeviceState(state), details.get("model")))
     return devices
 
 

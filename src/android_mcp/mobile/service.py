@@ -24,14 +24,24 @@ def _is_emulator(device: adb.Device) -> bool:
     return device.serial.startswith("emulator-")
 
 
+def _is_network(device: adb.Device) -> bool:
+    """Whether adb reaches ``device`` over the network rather than USB.
+
+    ``adb connect`` names a device ``host:port``. A device paired for wireless debugging that adb
+    connects to by itself over mDNS is named after its service instead, with no colon:
+    ``adb-R5CT30ABCDE-xYz1Qa._adb-tls-connect._tcp``.
+    """
+    return ":" in device.serial or "adb-tls-connect" in device.serial
+
+
 def pick_device(
     devices: Sequence[adb.Device], connection: Connection = "auto"
 ) -> adb.Device | None:
     """Choose which of ``devices`` to use when the caller named none.
 
     Only devices that are ready (state ``device``) are considered, in the order adb lists them.
-    ``connection`` narrows the choice: ``wifi`` takes a ``host:port`` serial, ``usb`` a physical
-    device with no colon in its serial. ``auto`` takes the first physical device, since someone
+    ``connection`` narrows the choice: ``wifi`` takes a device adb reaches over the network,
+    ``usb`` a physical device it does not. ``auto`` takes the first physical device, since someone
     who plugged a phone in did not mean to drive the emulator, and falls back to an emulator.
 
     Returns:
@@ -39,10 +49,10 @@ def pick_device(
     """
     ready = [device for device in devices if device.state is adb.DeviceState.DEVICE]
     if connection == "wifi":
-        return next((device for device in ready if ":" in device.serial), None)
+        return next((device for device in ready if _is_network(device)), None)
     if connection == "usb":
         return next(
-            (device for device in ready if ":" not in device.serial and not _is_emulator(device)),
+            (device for device in ready if not _is_network(device) and not _is_emulator(device)),
             None,
         )
     return next((device for device in ready if not _is_emulator(device)), None) or next(
