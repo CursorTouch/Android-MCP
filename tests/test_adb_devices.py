@@ -83,6 +83,42 @@ class TestListDevices:
 
         assert adb.list_devices()[0].serial == "192.168.1.3:5555"
 
+    def test_mdns_serial(self, adb_output):
+        """A wireless-debugging device adb connected over mDNS keeps its service-name serial."""
+        adb_output(
+            _output(
+                "adb-RF8M12345-AbC9Zz._adb-tls-connect._tcp device product:PongEEA model:A065 "
+                "device:Pong transport_id:74"
+            )
+        )
+
+        assert adb.list_devices() == [
+            adb.Device("adb-RF8M12345-AbC9Zz._adb-tls-connect._tcp", adb.DeviceState.DEVICE, "A065")
+        ]
+
+    def test_serial_with_a_space(self, adb_output):
+        """adb adds `` (2)`` to a repeated mDNS name; the serial is kept whole, state and all."""
+        adb_output(
+            _output(
+                "adb-RF8M12345-AbC9Zz (2)._adb-tls-connect._tcp device product:p model:A065 "
+                "device:d transport_id:75",
+                PHONE,
+            )
+        )
+
+        assert adb.list_devices() == [
+            adb.Device(
+                "adb-RF8M12345-AbC9Zz (2)._adb-tls-connect._tcp", adb.DeviceState.DEVICE, "A065"
+            ),
+            adb.Device("R5CT30ABCDE", adb.DeviceState.DEVICE, "SM_G973F"),
+        ]
+
+    def test_state_of_more_than_one_word_is_unknown(self, adb_output):
+        """``no permissions (...)`` keeps the first field as the serial and reads as UNKNOWN."""
+        adb_output(_output("R5CT30ABCDE            no permissions (missing udev rules?) usb:1-2"))
+
+        assert adb.list_devices() == [adb.Device("R5CT30ABCDE", adb.DeviceState.UNKNOWN, None)]
+
     def test_states_other_than_ready_are_listed(self, adb_output):
         """Devices that are not ready are returned, with their state, so callers can explain why."""
         adb_output(_output("AAA unauthorized usb:1-1", "BBB offline"))
