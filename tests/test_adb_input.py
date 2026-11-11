@@ -92,7 +92,27 @@ class TestTouch:
         """A drag is ``input draganddrop``."""
         adb.drag(1, 2, 3, 4)
 
-        assert shell_calls == [("input draganddrop 1 2 3 4 500", None)]
+        assert shell_calls == [("input draganddrop 1 2 3 4 500 2>&1", None)]
+
+    def test_drag_on_a_device_without_draganddrop_raises(self, monkeypatch):
+        """Before Android 8 ``input`` answers "Unknown command" on stderr and exits 0.
+
+        ``shell`` returns only stdout, so the answer is seen only when the command merges the
+        two; without it the drag silently did nothing and was reported as done.
+        """
+        calls = []
+
+        def android_7(command, *, serial=None, timeout=30):
+            calls.append(command)
+            if command.endswith(" 2>&1"):
+                return "Error: Unknown command: draganddrop\nUsage: input [<source>] ...\n"
+            return ""
+
+        monkeypatch.setattr(input, "shell", android_7)
+
+        with pytest.raises(adb.AdbError, match="Android 8"):
+            adb.drag(1, 2, 3, 4)
+        assert calls == ["input draganddrop 1 2 3 4 500 2>&1"]
 
     def test_serial_is_passed_through(self, shell_calls):
         """Every touch function targets the device it is given."""
