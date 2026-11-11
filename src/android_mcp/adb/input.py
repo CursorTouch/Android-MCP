@@ -6,6 +6,7 @@ import unicodedata
 
 from .core import shell
 from .enums import KeyCode
+from .errors import AdbError
 from .keyboard import INSTALL_HINT, is_keyboard_installed, keyboard_session
 
 
@@ -33,9 +34,18 @@ def drag(
     """Press at ``(x1, y1)``, drag to ``(x2, y2)`` and release, e.g. to move an icon.
 
     Unlike :func:`swipe` this starts with a press-and-hold, so it picks things up. ``input
-    draganddrop`` exists from Android 8.0 (API 26); earlier releases fail with an adb error.
+    draganddrop`` exists from Android 8.0 (API 26).
+
+    Raises:
+        AdbError: on an older device. Its ``input`` prints "Unknown command" to stderr and still
+            exits 0, so without this the drag would do nothing and look as if it had worked.
     """
-    shell(f"input draganddrop {x1} {y1} {x2} {y2} {duration_ms}", serial=serial)
+    output = shell(f"input draganddrop {x1} {y1} {x2} {y2} {duration_ms} 2>&1", serial=serial)
+    if "Unknown command" in output:
+        raise AdbError(
+            "Drag needs Android 8 or later: this device's `input` has no draganddrop command. "
+            "Nothing was moved."
+        )
 
 
 def press_key(key: KeyCode | int, *, serial: str | None = None) -> None:
