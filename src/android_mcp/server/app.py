@@ -27,7 +27,7 @@ def build_server(
         mobile: The service to drive. Defaults to a new one; tests pass their own.
     """
     session = Session(mobile or Mobile(), preference)
-    server = FastMCP(name="android-mcp-beta", instructions=INSTRUCTIONS)
+    server = FastMCP(name="android-mcp", instructions=INSTRUCTIONS)
     for register in REGISTRARS:
         register(server, session)
     return server

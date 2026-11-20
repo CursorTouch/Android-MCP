@@ -1,4 +1,4 @@
-"""Command line: ``android-mcp-beta`` starts the server on stdio."""
+"""Command line: ``android-mcp`` starts the server on stdio."""
 
 import os
 

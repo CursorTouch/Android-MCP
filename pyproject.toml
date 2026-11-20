@@ -1,10 +1,11 @@
 [project]
-name = "android-mcp-beta"
-version = "0.1.0"
-description = "Clean-room reimplementation of the Android-MCP server for Android device automation."
+name = "android-mcp"
+version = "0.3.0"
+description = "MCP server that lets an AI agent operate an Android device over ADB."
 readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
+urls = { Homepage = "https://github.com/CursorTouch/Android-MCP" }
 authors = [
     { name = "Jeomon George", email = "jeogeoalukka@gmail.com" }
 ]
@@ -31,7 +32,7 @@ dev = [
 ]
 
 [project.scripts]
-android-mcp-beta = "android_mcp.__main__:main"
+android-mcp = "android_mcp.__main__:main"
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"

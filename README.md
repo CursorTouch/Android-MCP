@@ -1,7 +1,6 @@
-# android-mcp-beta
+# Android-MCP
 
-Clean-room reimplementation of [Android-MCP](https://github.com/CursorTouch/Android-MCP): an MCP
-server that lets an AI agent operate an Android device over ADB.
+An MCP server that lets an AI agent operate an Android device over ADB.
 
 It needs only `adb`. Nothing is installed on the device, and there is no dependency on
 uiautomator2.
@@ -11,7 +10,7 @@ uiautomator2.
 Requires Python 3.13 and `adb` (Android platform-tools).
 
 ```
-uv run android-mcp-beta
+uvx --python 3.13 android-mcp
 ```
 
 The server speaks MCP on stdio. In a client's config:
@@ -19,13 +18,16 @@ The server speaks MCP on stdio. In a client's config:
 ```json
 {
   "mcpServers": {
-    "android-mcp-beta": {
-      "command": "uv",
-      "args": ["--directory", "D:/Projects/android-mcp-beta", "run", "android-mcp-beta"]
+    "android-mcp": {
+      "command": "uvx",
+      "args": ["--python", "3.13", "android-mcp"]
     }
   }
 }
 ```
+
+From a checkout, use `uv run android-mcp` instead, or in the config
+`"command": "uv", "args": ["--directory", "/path/to/Android-MCP", "run", "android-mcp"]`.
 
 The device is connected on the first tool call, so the server starts whether or not one is
 attached yet.

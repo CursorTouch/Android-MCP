@@ -169,7 +169,7 @@ def started(monkeypatch):
 
 @pytest.mark.unit
 class TestCommandLine:
-    """Tests for the android-mcp-beta command."""
+    """Tests for the android-mcp command."""
 
     def test_runs_the_server_with_the_default_preference(self, started):
         """No options starts the server on auto-detect."""
