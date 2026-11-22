@@ -44,6 +44,11 @@ class TestResolvePreference:
         """An explicit port is kept."""
         assert _resolve(wifi="192.168.1.3:5557").serial == "192.168.1.3:5557"
 
+    def test_wifi_option_keeps_an_mdns_serial_whole(self):
+        """The serial adb lists for a phone it connected over mDNS gets no port added."""
+        serial = "adb-RF8M12345-AbC9Zz._adb-tls-connect._tcp"
+        assert _resolve(wifi=serial).serial == serial
+
     def test_wifi_flag_without_a_host_uses_the_environment(self):
         """--wifi on its own falls back to ANDROID_MCP_HOST."""
         preference = _resolve(wifi="", env={"ANDROID_MCP_HOST": "10.0.0.9"})

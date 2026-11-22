@@ -27,6 +27,10 @@ PHONE = adb.Device("R5CT30ABCDE", adb.DeviceState.DEVICE, "SM_G973F")
 WIFI = adb.Device("192.168.1.3:5555", adb.DeviceState.DEVICE, "Pixel_8")
 # A phone paired for wireless debugging, which adb connected to by itself over mDNS.
 MDNS = adb.Device("adb-RF8M12345-AbC9Zz._adb-tls-connect._tcp", adb.DeviceState.DEVICE, "A065")
+# adb appends " (2)" when an mDNS name repeats, so the serial can hold a space.
+MDNS_REPEATED = adb.Device(
+    "adb-AEORQMSAOWNQ-N7Ger8 (2)._adb-tls-connect._tcp", adb.DeviceState.DEVICE, "Pixel_10_Pro"
+)
 
 
 def _device(serial, state):
@@ -658,13 +662,15 @@ class TestWifi:
             ("192.168.1.3", "192.168.1.3:5555"),
             ("192.168.1.3:5557", "192.168.1.3:5557"),
             ("  phone.local ", "phone.local:5555"),
+            (MDNS.serial, MDNS.serial),
+            (MDNS_REPEATED.serial, MDNS_REPEATED.serial),
             ("", None),
             ("   ", None),
             (None, None),
         ],
     )
     def test_normalize(self, given, address):
-        """Port 5555 is added when missing; blank means no address."""
+        """Port 5555 is added when missing, but not to an mDNS serial; blank means no address."""
         assert normalize_wifi_address(given) == address
 
     def test_connects_adb_then_selects_the_device(self, attached, monkeypatch):
@@ -679,6 +685,32 @@ class TestWifi:
         assert connected == ["192.168.1.3:5555"]
         assert device == WIFI
         assert mobile.serial == "192.168.1.3:5555"
+
+    def test_mdns_serial_is_selected_without_adb_connect(self, attached, monkeypatch):
+        """A phone adb connected over mDNS is already attached: it is selected as it is.
+
+        Running ``adb connect`` on its service name (with :5555 added) failed to resolve, so a
+        Wi-Fi preference naming the serial adb lists could never connect.
+        """
+        attached(MDNS)
+        monkeypatch.setattr(adb, "connect", lambda *a, **k: pytest.fail("adb was asked to connect"))
+        mobile = Mobile()
+
+        device = mobile.connect_wifi(MDNS.serial)
+
+        assert device == MDNS
+        assert mobile.serial == MDNS.serial
+
+    def test_mdns_serial_with_a_space_is_selected_without_adb_connect(self, attached, monkeypatch):
+        """A repeated mDNS name (``... (2)._adb-tls-connect._tcp``) is kept whole and selected."""
+        attached(MDNS_REPEATED)
+        monkeypatch.setattr(adb, "connect", lambda *a, **k: pytest.fail("adb was asked to connect"))
+        mobile = Mobile()
+
+        device = mobile.connect_wifi(MDNS_REPEATED.serial)
+
+        assert device == MDNS_REPEATED
+        assert mobile.serial == MDNS_REPEATED.serial
 
     def test_blank_host_is_refused_before_adb_is_asked(self, attached, monkeypatch):
         """Nothing is connected for a blank host."""

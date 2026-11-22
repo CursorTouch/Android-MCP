@@ -24,14 +24,23 @@ def _is_emulator(device: adb.Device) -> bool:
     return device.serial.startswith("emulator-")
 
 
+def _is_mdns_serial(serial: str) -> bool:
+    """Whether ``serial`` names a device adb connected to by itself over mDNS.
+
+    A device paired for wireless debugging gets its service name as serial, with no colon:
+    ``adb-R5CT30ABCDE-xYz1Qa._adb-tls-connect._tcp``. adb manages that connection, so there is
+    nothing to ``adb connect`` to.
+    """
+    return "adb-tls-connect" in serial
+
+
 def _is_network(device: adb.Device) -> bool:
     """Whether adb reaches ``device`` over the network rather than USB.
 
-    ``adb connect`` names a device ``host:port``. A device paired for wireless debugging that adb
-    connects to by itself over mDNS is named after its service instead, with no colon:
-    ``adb-R5CT30ABCDE-xYz1Qa._adb-tls-connect._tcp``.
+    ``adb connect`` names a device ``host:port``; one adb connected over mDNS is named after its
+    service instead (see :func:`_is_mdns_serial`).
     """
-    return ":" in device.serial or "adb-tls-connect" in device.serial
+    return ":" in device.serial or _is_mdns_serial(device.serial)
 
 
 def pick_device(
@@ -69,13 +78,16 @@ def _describe(devices: Sequence[adb.Device]) -> str:
 def normalize_wifi_address(host: str | None) -> str | None:
     """Give ``host`` or ``host:port`` as adb wants it, adding the default port 5555.
 
+    An mDNS serial (see :func:`_is_mdns_serial`) is returned as it is: it is not a host, and a
+    port would stop it matching the serial adb lists.
+
     Returns:
         The address, or ``None`` when ``host`` is missing or blank.
     """
     if host is None or not host.strip():
         return None
     host = host.strip()
-    return host if ":" in host else f"{host}:5555"
+    return host if ":" in host or _is_mdns_serial(host) else f"{host}:5555"
 
 
 def _describe_selector(**selector: str | None) -> str:
@@ -147,7 +159,8 @@ class Mobile:
         """Connect adb to a device over Wi-Fi, then select it.
 
         Args:
-            host: ``host`` or ``host:port``. Port 5555 is assumed when there is none.
+            host: ``host`` or ``host:port``. Port 5555 is assumed when there is none. The serial
+                of a device adb already connected over mDNS is selected without ``adb connect``.
 
         Raises:
             MobileError: if ``host`` is blank, or the device does not show up as ready.
@@ -156,7 +169,8 @@ class Mobile:
         address = normalize_wifi_address(host)
         if address is None:
             raise MobileError("A host or host:port is required to connect over Wi-Fi.")
-        adb.connect(address)
+        if not _is_mdns_serial(address):
+            adb.connect(address)
         return self.connect(address)
 
     def disconnect(self) -> None:
