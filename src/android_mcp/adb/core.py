@@ -290,6 +290,85 @@ def connect(address: str, *, timeout: float = 15) -> None:
         raise AdbError(output or f"adb connect {address} printed nothing")
 
 
+# ``ip -f inet addr`` prints an interface header, then its addresses beneath it:
+#   24: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 ...
+#       inet 192.168.1.42/24 brd 192.168.1.255 scope global wlan0
+_IP_INTERFACE = re.compile(r"^\d+:\s+(?P<name>[^\s:@]+)")
+_IP_ADDRESS = re.compile(r"^\s+inet\s+(?P<address>\d+\.\d+\.\d+\.\d+)/")
+
+
+def wifi_address(*, serial: str | None = None) -> str:
+    """The IPv4 address of the device's Wi-Fi interface.
+
+    Args:
+        serial: Target device. Omit when exactly one device is attached.
+
+    Raises:
+        AdbError: if the device has no Wi-Fi address, which means it is not on a network.
+        AdbCommandError: if the command fails.
+    """
+    interface = None
+    for line in shell("ip -f inet addr", serial=serial).splitlines():
+        header = _IP_INTERFACE.match(line)
+        if header:
+            interface = header["name"]
+            continue
+        address = _IP_ADDRESS.match(line)
+        if address and interface is not None and interface.startswith("wlan"):
+            return address["address"]
+    raise AdbError("The device has no Wi-Fi address. Connect it to a Wi-Fi network first.")
+
+
+def enable_tcpip(port: int = 5555, *, serial: str | None = None, timeout: float = 15) -> None:
+    """Restart the device's adb daemon listening on TCP ``port``, as ``adb tcpip`` does.
+
+    The device drops off adb for a moment while the daemon restarts.
+
+    Raises:
+        AdbCommandError: if the command fails.
+        AdbError: if adb ran but did not report restarting. It can print an error and still
+            exit 0, so the output is what is checked.
+    """
+    output = run("tcpip", str(port), serial=serial, timeout=timeout).strip()
+    if "restarting in tcp mode" not in output.lower():
+        raise AdbError(output or f"adb tcpip {port} printed nothing")
+
+
+def disable_tcpip(*, serial: str | None = None, timeout: float = 15) -> None:
+    """Restart the device's adb daemon in USB mode, as ``adb usb`` does.
+
+    The device drops off adb for a moment while the daemon restarts.
+
+    Raises:
+        AdbCommandError: if the command fails.
+        AdbError: if adb ran but did not report restarting. It can print an error and still
+            exit 0, so the output is what is checked.
+    """
+    output = run("usb", serial=serial, timeout=timeout).strip()
+    if "restarting in usb mode" not in output.lower():
+        raise AdbError(output or "adb usb printed nothing")
+
+
+def hardware_serial(*, serial: str | None = None) -> str:
+    """The device's own serial number, which is what it is named once it is on USB.
+
+    Over the network a device is named ``host:port``, so this is how to tell which USB device it
+    becomes.
+
+    Raises:
+        AdbError: if the device does not report one.
+    """
+    value = shell("getprop ro.serialno", serial=serial).strip()
+    if not value:
+        raise AdbError("The device did not report a serial number.")
+    return value
+
+
+def disconnect(address: str, *, timeout: float = 15) -> None:
+    """Drop adb's connection to a device on the network. Nothing is changed on the device."""
+    run("disconnect", address, timeout=timeout)
+
+
 def connect_mdns_peers(*, timeout: float = 5) -> list[str]:
     """Connect to every device advertising wireless debugging that is not connected yet.
 

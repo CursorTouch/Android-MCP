@@ -1120,3 +1120,228 @@ class TestClickElement:
 
         with pytest.raises(ElementNotFoundError, match="within 5s"):
             mobile.click_element(text="Save")
+
+
+@pytest.mark.unit
+class TestSwitchToWifi:
+    """Tests for switch_to_wifi."""
+
+    @pytest.fixture
+    def usb_phone(self, attached, monkeypatch):
+        """A phone on USB that shows up at 192.168.1.42:5555 once it is in TCP mode."""
+        state = {"devices": [PHONE], "calls": [], "refusals": 0}
+        monkeypatch.setattr(adb, "list_devices", lambda: list(state["devices"]))
+        monkeypatch.setattr(mobile_service, "sleep", lambda seconds: None)
+
+        def wifi_address(*, serial=None):
+            state["calls"].append(("wifi_address", serial))
+            return "192.168.1.42"
+
+        def enable_tcpip(port=5555, *, serial=None, **kwargs):
+            state["calls"].append(("tcpip", port, serial))
+
+        def connect(address, **kwargs):
+            state["calls"].append(("connect", address))
+            if state["refusals"]:
+                state["refusals"] -= 1
+                raise adb.AdbError(f"failed to connect to '{address}'")
+            state["devices"] = [PHONE, adb.Device(address, adb.DeviceState.DEVICE, "SM_G973F")]
+
+        monkeypatch.setattr(adb, "wifi_address", wifi_address)
+        monkeypatch.setattr(adb, "enable_tcpip", enable_tcpip)
+        monkeypatch.setattr(adb, "connect", connect)
+        return state
+
+    def test_reads_the_address_then_enables_tcpip_then_connects(self, usb_phone):
+        """The address is read while the cable still works, and the Wi-Fi device is selected."""
+        mobile = Mobile()
+        mobile.connect("R5CT30ABCDE")
+
+        device = mobile.switch_to_wifi()
+
+        assert usb_phone["calls"] == [
+            ("wifi_address", "R5CT30ABCDE"),
+            ("tcpip", 5555, "R5CT30ABCDE"),
+            ("connect", "192.168.1.42:5555"),
+        ]
+        assert device.serial == "192.168.1.42:5555"
+        assert mobile.serial == "192.168.1.42:5555"
+
+    def test_a_custom_port_is_used_throughout(self, usb_phone):
+        mobile = Mobile()
+        mobile.connect("R5CT30ABCDE")
+
+        mobile.switch_to_wifi(5557)
+
+        assert ("tcpip", 5557, "R5CT30ABCDE") in usb_phone["calls"]
+        assert mobile.serial == "192.168.1.42:5557"
+
+    def test_connect_is_retried_while_the_daemon_restarts(self, usb_phone):
+        """adbd refuses connections for a moment after ``adb tcpip``."""
+        usb_phone["refusals"] = 3
+        mobile = Mobile()
+        mobile.connect("R5CT30ABCDE")
+
+        mobile.switch_to_wifi()
+
+        assert [call for call in usb_phone["calls"] if call[0] == "connect"] == [
+            ("connect", "192.168.1.42:5555")
+        ] * 4
+        assert mobile.serial == "192.168.1.42:5555"
+
+    def test_gives_up_when_the_device_never_accepts(self, usb_phone):
+        """The last error is raised, and the USB device stays selected."""
+        usb_phone["refusals"] = 99
+        mobile = Mobile()
+        mobile.connect("R5CT30ABCDE")
+
+        with pytest.raises(adb.AdbError, match="failed to connect"):
+            mobile.switch_to_wifi()
+
+        assert len([call for call in usb_phone["calls"] if call[0] == "connect"]) == 5
+        assert mobile.serial == "R5CT30ABCDE"
+
+    @pytest.mark.parametrize(
+        ("device", "message"),
+        [
+            (EMULATOR, "emulator"),
+            (WIFI, "already connected over the network"),
+            (MDNS, "already connected over the network"),
+        ],
+    )
+    def test_refuses_a_device_that_cannot_or_need_not_switch(
+        self, usb_phone, attached, device, message
+    ):
+        """Nothing is changed on an emulator or a device that is already wireless."""
+        attached(device)
+        mobile = Mobile()
+        mobile.connect(device.serial)
+
+        with pytest.raises(MobileError, match=message):
+            mobile.switch_to_wifi()
+
+        assert usb_phone["calls"] == []
+
+    def test_needs_a_connected_device(self, usb_phone):
+        with pytest.raises(MobileError, match="No device connected"):
+            Mobile().switch_to_wifi()
+
+    def test_a_device_not_on_wifi_is_left_alone(self, usb_phone, monkeypatch):
+        """With no Wi-Fi address, the daemon is not restarted."""
+
+        def no_address(*, serial=None):
+            raise adb.AdbError("The device has no Wi-Fi address.")
+
+        monkeypatch.setattr(adb, "wifi_address", no_address)
+        mobile = Mobile()
+        mobile.connect("R5CT30ABCDE")
+
+        with pytest.raises(adb.AdbError, match="no Wi-Fi address"):
+            mobile.switch_to_wifi()
+
+        assert usb_phone["calls"] == []
+
+
+@pytest.mark.unit
+class TestSwitchToUsb:
+    """Tests for switch_to_usb."""
+
+    @pytest.fixture
+    def wifi_phone(self, attached, monkeypatch):
+        """A phone on 192.168.1.3:5555 that shows up on the cable once it is in USB mode."""
+        state = {"devices": [WIFI], "calls": [], "missing": 0}
+        monkeypatch.setattr(adb, "list_devices", lambda: list(state["devices"]))
+        monkeypatch.setattr(mobile_service, "sleep", lambda seconds: None)
+
+        def hardware_serial(*, serial=None):
+            state["calls"].append(("hardware_serial", serial))
+            return "R5CT30ABCDE"
+
+        def disable_tcpip(*, serial=None, **kwargs):
+            state["calls"].append(("usb", serial))
+            state["devices"] = []
+
+        def list_devices():
+            if state["calls"] and state["calls"][-1][0] != "hardware_serial":
+                if state["missing"]:
+                    state["missing"] -= 1
+                else:
+                    state["devices"] = [PHONE]
+            return list(state["devices"])
+
+        monkeypatch.setattr(adb, "hardware_serial", hardware_serial)
+        monkeypatch.setattr(adb, "disable_tcpip", disable_tcpip)
+        monkeypatch.setattr(adb, "list_devices", list_devices)
+        monkeypatch.setattr(
+            adb,
+            "disconnect",
+            lambda address, **kwargs: state["calls"].append(("disconnect", address)),
+        )
+        return state
+
+    def test_reads_the_serial_then_restarts_in_usb_mode_then_selects_the_cable(self, wifi_phone):
+        mobile = Mobile()
+        mobile.connect("192.168.1.3:5555")
+
+        device = mobile.switch_to_usb()
+
+        assert wifi_phone["calls"] == [
+            ("hardware_serial", "192.168.1.3:5555"),
+            ("usb", "192.168.1.3:5555"),
+            ("disconnect", "192.168.1.3:5555"),
+        ]
+        assert device == PHONE
+        assert mobile.serial == "R5CT30ABCDE"
+
+    def test_waits_for_the_phone_to_appear_on_the_cable(self, wifi_phone):
+        wifi_phone["missing"] = 3
+        mobile = Mobile()
+        mobile.connect("192.168.1.3:5555")
+
+        mobile.switch_to_usb()
+
+        assert mobile.serial == "R5CT30ABCDE"
+
+    def test_unplugged_phone_is_an_error_that_says_to_plug_it_in(self, wifi_phone):
+        wifi_phone["missing"] = 99
+        mobile = Mobile()
+        mobile.connect("192.168.1.3:5555")
+
+        with pytest.raises(MobileError, match="plug it in"):
+            mobile.switch_to_usb()
+
+    def test_a_failed_disconnect_does_not_undo_the_switch(self, wifi_phone, monkeypatch):
+        def refuse(address, **kwargs):
+            raise adb.AdbError("nope")
+
+        monkeypatch.setattr(adb, "disconnect", refuse)
+        mobile = Mobile()
+        mobile.connect("192.168.1.3:5555")
+
+        mobile.switch_to_usb()
+
+        assert mobile.serial == "R5CT30ABCDE"
+
+    @pytest.mark.parametrize(
+        ("device", "message"),
+        [
+            (PHONE, "not connected over the network"),
+            (EMULATOR, "not connected over the network"),
+            (MDNS, "Wireless debugging"),
+        ],
+    )
+    def test_refuses_a_device_not_reached_by_host_and_port(
+        self, wifi_phone, attached, device, message
+    ):
+        attached(device)
+        mobile = Mobile()
+        mobile.connect(device.serial)
+
+        with pytest.raises(MobileError, match=message):
+            mobile.switch_to_usb()
+
+        assert wifi_phone["calls"] == []
+
+    def test_needs_a_connected_device(self, wifi_phone):
+        with pytest.raises(MobileError, match="No device connected"):
+            Mobile().switch_to_usb()

@@ -51,7 +51,11 @@ def register(mcp: FastMCP, session: Session) -> None:
         ),
     )
 
-    def device(action: Literal["list", "connect", "disconnect"], serial: str | None = None) -> str:
+    def device(
+        action: Literal["list", "connect", "disconnect", "switch"],
+        serial: str | None = None,
+        to: Literal["wifi", "usb"] | None = None,
+    ) -> str:
         if action == "list":
             return list_devices()
         with session.operation(connect=False) as mobile:
@@ -61,13 +65,27 @@ def register(mcp: FastMCP, session: Session) -> None:
                 else:
                     found = session.connect_configured()
                 return f"Connected to {found.serial}"
+            if action == "switch":
+                if to is None:
+                    raise ValueError("switch needs `to`: 'wifi' or 'usb'.")
+                if serial:
+                    session.connect_to(serial)
+                elif not mobile.is_connected:
+                    session.connect_configured()
+                if to == "wifi":
+                    return f"Now connected over Wi-Fi at {mobile.switch_to_wifi().serial}"
+                return f"Now connected over USB as {mobile.switch_to_usb().serial}"
             mobile.disconnect()
             return "Disconnected from device."
 
     mcp.tool(
         device,
         name="Device",
-        description="Manage ADB devices (list, connect, or disconnect)",
+        description=(
+            "Manage ADB devices: list, connect, disconnect, or switch the connected device "
+            "between USB and Wi-Fi. switch with to=wifi needs the phone on USB and on a Wi-Fi "
+            "network; the cable can then be unplugged. switch with to=usb needs it plugged in."
+        ),
         annotations=ToolAnnotations(
             title="Device",
             read_only_hint=False,

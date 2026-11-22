@@ -278,8 +278,64 @@ class TestDeviceTools:
         assert text_of(result) == "Disconnected from device."
         assert device.calls("tap") == [((1, 1), "emulator-5554"), ((2, 2), "emulator-5554")]
 
+    async def test_device_switch_to_wifi_moves_the_usb_phone_onto_wifi(
+        self, server, device, monkeypatch
+    ):
+        """Device(switch, to=wifi) turns on TCP mode and selects the phone over Wi-Fi."""
+        device.devices = [PHONE]
+        tcpip = []
+
+        def enable_tcpip(port=5555, *, serial=None, **kwargs):
+            tcpip.append((port, serial))
+            device.devices.append(WIFI)
+
+        monkeypatch.setattr(adb, "wifi_address", lambda *, serial=None: "192.168.1.3")
+        monkeypatch.setattr(adb, "enable_tcpip", enable_tcpip)
+
+        result = await call(
+            server, "Device", {"action": "switch", "to": "wifi", "serial": "R5CT30ABCDE"}
+        )
+
+        assert text_of(result) == "Now connected over Wi-Fi at 192.168.1.3:5555"
+        assert tcpip == [(5555, "R5CT30ABCDE")]
+        assert device.connects == ["192.168.1.3:5555"]
+
+    async def test_device_switch_to_usb_moves_the_wifi_phone_back(
+        self, server, device, monkeypatch
+    ):
+        """Device(switch, to=usb) puts the daemon back in USB mode and selects the cable."""
+        device.devices = [WIFI]
+        usb_mode = []
+
+        def disable_tcpip(*, serial=None, **kwargs):
+            usb_mode.append(serial)
+            device.devices = [PHONE]
+
+        monkeypatch.setattr(adb, "hardware_serial", lambda *, serial=None: "R5CT30ABCDE")
+        monkeypatch.setattr(adb, "disable_tcpip", disable_tcpip)
+        monkeypatch.setattr(adb, "disconnect", lambda address, **kwargs: None)
+
+        result = await call(
+            server, "Device", {"action": "switch", "to": "usb", "serial": "192.168.1.3:5555"}
+        )
+
+        assert text_of(result) == "Now connected over USB as R5CT30ABCDE"
+        assert usb_mode == ["192.168.1.3:5555"]
+
+    async def test_device_switch_without_a_target_is_an_error(self, server):
+        """`to` says which way to switch; guessing could move the wrong device."""
+        result = await call(server, "Device", {"action": "switch"}, ok=False)
+
+        assert "wifi" in text_of(result) and "usb" in text_of(result)
+
+    async def test_device_switch_to_wifi_on_an_emulator_is_an_error(self, server, device):
+        """An emulator cannot be moved onto Wi-Fi, and the agent is told why."""
+        result = await call(server, "Device", {"action": "switch", "to": "wifi"}, ok=False)
+
+        assert "emulator" in text_of(result)
+
     async def test_device_rejects_an_unknown_action(self, server):
-        """The schema only allows list, connect and disconnect."""
+        """The schema only allows list, connect, disconnect and switch."""
         async with Client(server) as client:
             with pytest.raises(Exception, match="action"):
                 await client.call_tool("Device", {"action": "reboot"})

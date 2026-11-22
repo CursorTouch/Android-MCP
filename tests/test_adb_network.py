@@ -154,3 +154,113 @@ class TestExpandNotifications:
         adb.expand_notifications(serial="emulator-5554")
 
         assert seen == [("cmd statusbar expand-notifications", "emulator-5554")]
+
+
+IP_ADDR = (
+    "1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN\n"
+    "    inet 127.0.0.1/8 scope host lo\n"
+    "       valid_lft forever preferred_lft forever\n"
+    "24: rmnet_data1: <UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN\n"
+    "    inet 10.20.30.40/30 scope global rmnet_data1\n"
+    "25: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP\n"
+    "    inet 192.168.1.42/24 brd 192.168.1.255 scope global wlan0\n"
+    "       valid_lft forever preferred_lft forever\n"
+)
+
+
+@pytest.mark.unit
+class TestWifiAddress:
+    """Tests for wifi_address."""
+
+    def test_reads_the_address_of_the_wlan_interface(self, adb_says):
+        """Loopback and mobile-data addresses are passed over."""
+        adb_says(["shell", "ip -f inet addr"], IP_ADDR)
+
+        assert adb.wifi_address(serial="R5CT30ABCDE") == "192.168.1.42"
+        assert adb_says.calls[0][1] == {"serial": "R5CT30ABCDE", "timeout": 30}
+
+    def test_no_wlan_address_is_an_error(self, adb_says):
+        """A phone on mobile data only has no Wi-Fi address to connect to."""
+        adb_says(["shell", "ip -f inet addr"], IP_ADDR.split("25: wlan0")[0])
+
+        with pytest.raises(adb.AdbError, match="no Wi-Fi address"):
+            adb.wifi_address()
+
+    def test_wlan_interface_without_an_address_is_an_error(self, adb_says):
+        """An interface that is up but not on a network lists no ``inet`` line."""
+        adb_says(["shell", "ip -f inet addr"], "25: wlan0: <BROADCAST,MULTICAST> state DOWN\n")
+
+        with pytest.raises(adb.AdbError, match="no Wi-Fi address"):
+            adb.wifi_address()
+
+
+@pytest.mark.unit
+class TestEnableTcpip:
+    """Tests for enable_tcpip."""
+
+    def test_asks_adb_to_restart_in_tcp_mode(self, adb_says):
+        """The port is passed as given, for the named device."""
+        adb_says(["tcpip"], "restarting in TCP mode port: 5557\n")
+
+        adb.enable_tcpip(5557, serial="R5CT30ABCDE")
+
+        assert adb_says.calls == [
+            (("tcpip", "5557"), {"serial": "R5CT30ABCDE", "timeout": 15}),
+        ]
+
+    @pytest.mark.parametrize("output", ["error: closed", ""])
+    def test_anything_else_is_an_error(self, adb_says, output):
+        """adb can print a failure and still exit 0."""
+        adb_says(["tcpip"], output)
+
+        with pytest.raises(adb.AdbError):
+            adb.enable_tcpip()
+
+
+@pytest.mark.unit
+class TestDisableTcpip:
+    """Tests for disable_tcpip."""
+
+    def test_asks_adb_to_restart_in_usb_mode(self, adb_says):
+        adb_says(["usb"], "restarting in USB mode\n")
+
+        adb.disable_tcpip(serial="192.168.1.3:5555")
+
+        assert adb_says.calls == [
+            (("usb",), {"serial": "192.168.1.3:5555", "timeout": 15}),
+        ]
+
+    @pytest.mark.parametrize("output", ["error: closed", ""])
+    def test_anything_else_is_an_error(self, adb_says, output):
+        adb_says(["usb"], output)
+
+        with pytest.raises(adb.AdbError):
+            adb.disable_tcpip()
+
+
+@pytest.mark.unit
+class TestHardwareSerial:
+    """Tests for hardware_serial."""
+
+    def test_reads_the_serial_property(self, adb_says):
+        adb_says(["shell", "getprop ro.serialno"], "R5CT30ABCDE\n")
+
+        assert adb.hardware_serial(serial="192.168.1.3:5555") == "R5CT30ABCDE"
+
+    def test_a_missing_serial_is_an_error(self, adb_says):
+        adb_says(["shell", "getprop ro.serialno"], "\n")
+
+        with pytest.raises(adb.AdbError, match="serial number"):
+            adb.hardware_serial()
+
+
+@pytest.mark.unit
+class TestDisconnect:
+    """Tests for disconnect."""
+
+    def test_asks_adb_to_disconnect_that_address(self, adb_says):
+        adb_says(["disconnect"], "disconnected 192.168.1.3:5555")
+
+        adb.disconnect("192.168.1.3:5555", timeout=3)
+
+        assert adb_says.calls == [(("disconnect", "192.168.1.3:5555"), {"timeout": 3})]

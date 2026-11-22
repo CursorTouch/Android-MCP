@@ -53,7 +53,7 @@ Options win over the environment. Other variables:
 
 | Tool | Does |
 |---|---|
-| `ListDevices`, `ConnectDevice`, `Device` | List, choose, or disconnect the device |
+| `ListDevices`, `ConnectDevice`, `Device` | List, choose, or disconnect the device. `Device` with `action=switch` and `to=wifi` moves a USB phone onto ADB over Wi-Fi (`adb tcpip` then `adb connect`; the phone must be on Wi-Fi, and the cable can then be unplugged). `to=usb` moves it back (`adb usb`; the phone must be plugged in) |
 | `Snapshot` | The interactive elements, each with a label and tap coordinates. `use_vision` adds a screenshot with the labels drawn on it; `use_annotation=false` leaves it clean |
 | `Click`, `LongClick`, `Swipe`, `Drag` | Touch input by coordinates |
 | `ClickBySelector` | Tap an element found by `text`, `resourceId`, `className` or `description` (exact match; `resourceId` may be the part after the slash), with `index` for the nth match |

@@ -1,5 +1,6 @@
 """The mobile service: one connected device, read through its screen and driven through input."""
 
+import contextlib
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from time import monotonic, sleep
@@ -13,6 +14,10 @@ from .screenshot import render
 from .views import MobileState
 
 Connection = Literal["auto", "usb", "wifi"]
+
+# The adb daemon restarts when put into TCP mode, so the first connects can be refused.
+_SWITCH_ATTEMPTS = 5
+_SWITCH_DELAY = 1.0
 
 
 def _read_elements(serial: str) -> list[Element]:
@@ -172,6 +177,70 @@ class Mobile:
         if not _is_mdns_serial(address):
             adb.connect(address)
         return self.connect(address)
+
+    def switch_to_wifi(self, port: int = 5555) -> adb.Device:
+        """Move the connected USB device onto adb over Wi-Fi, then select it there.
+
+        The device's Wi-Fi address is read, its adb daemon is put into TCP mode on ``port`` and
+        adb is connected to it, as ``adb tcpip`` followed by ``adb connect`` would do. The USB
+        cable can be unplugged afterwards.
+
+        Raises:
+            MobileError: if no device is connected, or it is an emulator or already on the
+                network.
+            AdbError: if the device is not on Wi-Fi, or adb cannot connect to it after it
+                restarts in TCP mode.
+        """
+        serial = self._require()
+        if serial.startswith("emulator-"):
+            raise MobileError("An emulator has no Wi-Fi address adb can reach.")
+        if ":" in serial or _is_mdns_serial(serial):
+            raise MobileError(f"{serial} is already connected over the network.")
+        address = f"{adb.wifi_address(serial=serial)}:{port}"
+        adb.enable_tcpip(port, serial=serial)
+        for _ in range(_SWITCH_ATTEMPTS - 1):
+            try:
+                return self.connect_wifi(address)
+            except (adb.AdbError, MobileError):
+                sleep(_SWITCH_DELAY)
+        return self.connect_wifi(address)
+
+    def switch_to_usb(self) -> adb.Device:
+        """Move the connected Wi-Fi device back onto adb over USB, then select it there.
+
+        The device's own serial is read, its adb daemon is put back into USB mode, as ``adb usb``
+        does, and the device is selected under that serial once it shows up on the cable. The
+        phone must be plugged in.
+
+        Raises:
+            MobileError: if no device is connected, or it is not one that ``adb connect``
+                reached by ``host:port``, or it does not appear on USB.
+            AdbError: if adb cannot restart the device in USB mode.
+        """
+        address = self._require()
+        if _is_mdns_serial(address):
+            raise MobileError(
+                f"{address} is connected through Wireless debugging, which adb cannot turn off. "
+                "Turn it off in the phone's Developer options instead."
+            )
+        if ":" not in address:
+            raise MobileError(f"{address} is not connected over the network.")
+        usb_serial = adb.hardware_serial(serial=address)
+        adb.disable_tcpip(serial=address)
+        for attempt in range(_SWITCH_ATTEMPTS):
+            try:
+                device = self.connect(usb_serial)
+                break
+            except MobileError as error:
+                if attempt == _SWITCH_ATTEMPTS - 1:
+                    raise MobileError(
+                        f"{error} The device is back in USB mode: plug it in to use it."
+                    ) from None
+                sleep(_SWITCH_DELAY)
+        # Only a stale network entry is left if this fails; the device is already selected.
+        with contextlib.suppress(adb.AdbError):
+            adb.disconnect(address)
+        return device
 
     def disconnect(self) -> None:
         """Forget the connected device. Nothing is changed on the device itself."""
